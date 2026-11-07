@@ -1,0 +1,40 @@
+# Virtual Environment
+venv_gelarrasa/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Dataset
+data/raw/
+data/extracted/
+data/processed/
+data/kaggle_test/
+data/metadata/
+
+# Model Weights
+models/checkpoints/
+models/best/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Experiment Results
+outputs/
+runs/
+wandb/
+
+# Environment Variables
+.env
+.env.*
+
+# Kaggle Submission
+Final Dataset for Submission to Kaggle/submission.csv
+
+# System Files
+.DS_Store
+Thumbs.db
