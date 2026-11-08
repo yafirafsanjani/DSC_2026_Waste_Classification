@@ -1,0 +1,10 @@
+﻿model_type: resnet50
+framework: torchvision
+pretrained: true
+weights: ResNet50_Weights.DEFAULT
+preprocessing:
+  profile: torchvision_imagenet_fallback
+  metadata_priority: official
+augmentation:
+  enabled: true
+  profile: pretrained_light

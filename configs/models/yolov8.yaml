@@ -1,0 +1,18 @@
+﻿model_type: yolo_classification
+framework: ultralytics
+pretrained: false
+preprocessing:
+  profile: yolo_classification
+  metadata_priority: ultralytics_pipeline
+augmentation:
+  enabled: true
+  profile: yolo_ultralytics
+ultralytics:
+  imgsz: 224
+  fliplr: 0.5
+  flipud: 0.0
+  degrees: 15.0
+  shear: 10.0
+  hsv_v: null
+  erasing: 0.0
+  external_augmentation: false

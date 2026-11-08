@@ -1,0 +1,23 @@
+seed: 42
+early_stopping:
+  monitor: val_loss
+  mode: min
+  patience: 10
+  min_delta: 0.001
+checkpoint:
+  monitor: val_loss
+  mode: min
+  directory: models/checkpoints
+scheduler:
+  name: reduce_on_plateau
+  monitor: val_loss
+  mode: min
+  factor: 0.5
+  patience: 4
+  min_lr: 0.000001
+training:
+  amp_enabled: true
+  gradient_accumulation_steps: 1
+  gradient_clip_norm: null
+  num_workers: 0
+  pin_memory: auto

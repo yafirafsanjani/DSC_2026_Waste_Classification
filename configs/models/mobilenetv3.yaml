@@ -1,0 +1,10 @@
+﻿model_type: mobilenetv3_large
+framework: torchvision
+pretrained: true
+weights: MobileNet_V3_Large_Weights.DEFAULT
+preprocessing:
+  profile: torchvision_imagenet_fallback
+  metadata_priority: official
+augmentation:
+  enabled: true
+  profile: pretrained_light

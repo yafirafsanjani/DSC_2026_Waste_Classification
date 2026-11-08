@@ -1,0 +1,10 @@
+﻿model_type: efficientnet_b0
+framework: timm
+pretrained: true
+weights: null
+preprocessing:
+  profile: timm_imagenet_fallback
+  metadata_priority: official
+augmentation:
+  enabled: true
+  profile: pretrained_light
