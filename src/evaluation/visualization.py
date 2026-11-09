@@ -17,7 +17,7 @@ def load_history(path: Path | str) -> list[dict[str, object]]:
 
 
 def plot_learning_curves(history: Sequence[Mapping[str, object]] | Path | str, output_path: Path | str,
-                         *, title: str = "Learning Curves") -> Path:
+                         *, title: str = "Learning Curves", display_figure: bool = False) -> Path:
     """Create loss, accuracy, LR, and macro-F1 plots from saved epoch metrics."""
     if isinstance(history, (str, Path)):
         history = load_history(history)
@@ -53,5 +53,11 @@ def plot_learning_curves(history: Sequence[Mapping[str, object]] | Path | str, o
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(destination, dpi=160)
+    if display_figure:
+        try:
+            from IPython.display import display
+            display(figure)
+        except ImportError:
+            pass
     plt.close(figure)
     return destination

@@ -1,0 +1,9 @@
+model_type: cnn_v2
+framework: custom_pytorch
+pretrained: false
+preprocessing:
+  profile: cnn_default
+  metadata_priority: config
+augmentation:
+  enabled: true
+  profile: cnn_standard

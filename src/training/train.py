@@ -17,7 +17,8 @@ def train_one_epoch(model: nn.Module, data_loader: DataLoader, criterion: nn.Mod
                     optimizer: torch.optim.Optimizer, device: torch.device | str = "cpu", *,
                     scaler: torch.amp.GradScaler | None = None, amp_enabled: bool = True,
                     gradient_accumulation_steps: int = 1, gradient_clip_norm: float | None = None,
-                    show_progress: bool = True) -> tuple[dict[str, float | int], torch.amp.GradScaler | None]:
+                    show_progress: bool = True, epoch: int | None = None,
+                    max_epochs: int | None = None) -> tuple[dict[str, float | int], torch.amp.GradScaler | None]:
     """Train one epoch with sample-weighted metrics and correct final accumulation window."""
     if gradient_accumulation_steps <= 0:
         raise ValueError("gradient_accumulation_steps must be positive.")
@@ -30,7 +31,9 @@ def train_one_epoch(model: nn.Module, data_loader: DataLoader, criterion: nn.Mod
     optimizer.zero_grad(set_to_none=True)
     total_loss, total_correct, total_samples = 0.0, 0, 0
     batch_count = len(data_loader)
-    iterator = tqdm(data_loader, desc="Training", leave=False, disable=not show_progress)
+    description = "Training" if epoch is None or max_epochs is None else f"Epoch {epoch + 1}/{max_epochs} train"
+    iterator = tqdm(data_loader, total=batch_count, desc=description, leave=False, disable=not show_progress)
+    smoothed_loss: float | None = None
     for batch_index, (inputs, targets) in enumerate(iterator):
         inputs, targets = inputs.to(target_device), targets.to(target_device)
         window_size = min(gradient_accumulation_steps, batch_count - batch_index + (batch_index % gradient_accumulation_steps))
@@ -44,6 +47,14 @@ def train_one_epoch(model: nn.Module, data_loader: DataLoader, criterion: nn.Mod
         total_loss += float(loss.detach()) * batch_size
         total_correct += int((outputs.detach().argmax(dim=1) == targets).sum())
         total_samples += batch_size
+        batch_loss = float(loss.detach())
+        smoothed_loss = batch_loss if smoothed_loss is None else 0.9 * smoothed_loss + 0.1 * batch_loss
+        if show_progress:
+            iterator.set_postfix(
+                loss=f"{smoothed_loss:.4f}",
+                acc=f"{total_correct / total_samples:.2%}",
+                lr=f"{float(optimizer.param_groups[0]['lr']):.2e}",
+            )
         active_scaler.scale(loss / window_size).backward()
         is_window_end = (batch_index + 1) % gradient_accumulation_steps == 0 or batch_index + 1 == batch_count
         if is_window_end:

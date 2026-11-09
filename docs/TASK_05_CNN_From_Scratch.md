@@ -1,73 +1,158 @@
-# TASK 05 - CNN From Scratch Experiment Notebook
+# TASK 05B - Final CNN From Scratch Training Results
 
-## 1. Tujuan Eksperimen
+## 1. Scope and Evidence
 
-TASK 05 menyediakan satu notebook eksperimen manual pada `notebooks/01_cnn_from_scratch.ipynb`. Notebook menyiapkan baseline CNN tanpa pretrained weights untuk klasifikasi delapan kelas sampah. Tujuan implementasi adalah memberi pengguna alur eksperimen yang dapat direproduksi tanpa mengubah dataset, manifest, modul bersama, atau konfigurasi global.
+Dokumen ini mencatat hasil eksperimen yang sudah dijalankan secara manual oleh pengguna melalui `notebooks/01_cnn_from_scratch.ipynb`. Tidak ada training, resume, continued training, inference, atau evaluasi internal test yang dijalankan saat TASK 05B. Angka di bawah diverifikasi dari:
 
-Tidak ada training, validation evaluation, internal-test evaluation, inference, resume, atau continued training yang dijalankan oleh implementasi TASK ini. Semua operasi tersebut dilindungi flag opt-in default `False` dan hanya boleh dijalankan pengguna melalui notebook.
+- output eksekusi notebook, termasuk validation classification report dan confusion matrix;
+- `outputs/metrics/cnn_scratch_baseline_v1.json` dengan 75 record epoch;
+- `models/checkpoints/cnn_scratch_baseline_v1/best.pt` dan `models/checkpoints/cnn_scratch_baseline_v1/last.pt`; dan
+- `outputs/figures/cnn_scratch_baseline_v1_learning_curves.png`.
 
-## 2. Data dan Pipeline
+Ringkasan terstruktur untuk notebook perbandingan model tersedia di `outputs/metrics/cnn_scratch_baseline_v1_summary.json`.
 
-Notebook menggunakan manifest aktif hasil TASK 02E melalui API `create_dataloader` TASK 04. Validasi awal memeriksa 1.914 record dengan split train 1.340, validation 383, dan internal test 191; delapan kelas berasal dari metadata aktual. Sumber setiap record harus diawali `data/extracted/v1/train/`. Referensi V1/test, V5, dan path terlarang ditolak oleh assertion notebook maupun validasi DataLoader.
+## 2. Dataset and Split
 
-Train loader menggunakan preprocessing dan augmentasi on-the-fly profil `cnn` dari TASK 03. Validation loader memakai transform deterministik tanpa augmentasi acak. Internal test tidak dibuat loader dalam notebook agar tidak digunakan untuk pemilihan checkpoint atau hyperparameter.
+Eksperimen memakai dataset V1 final melalui manifest aktif. Semua source record tervalidasi berasal dari `data/extracted/v1/train/`; tidak ada data `v1/test` maupun `v5` yang digunakan.
 
-## 3. Desain CNN
+| Split | Samples |
+| --- | ---: |
+| Train | 1,340 |
+| Validation | 383 |
+| Internal test | 191 (tidak digunakan) |
+| Total | 1,914 |
 
-Model `CNNFromScratch` memiliki empat convolutional block dengan dua convolution 3x3 pada tiap block, Batch Normalization, ReLU, dan Max Pooling. Jumlah kanal bertumbuh dari 32 menjadi 64, 128, dan 192. Fitur diakhiri `AdaptiveAvgPool2d((1, 1))`, lalu head `Linear(192, 256)`, ReLU, Dropout 0,40, dan linear classifier.
+Kelas yang digunakan: `cardboard`, `electronic`, `foodwaste`, `glass`, `metal`, `paper`, `plastic`, dan `textile`.
 
-Adaptive pooling menahan ukuran classifier agar tidak membesar pada input 224x224. Arsitektur ini cukup kecil untuk baseline pada GPU 4 GB VRAM dan memberi regularisasi awal melalui Batch Normalization serta Dropout. Jumlah output diambil dari `len(class_mapping)`, bukan angka kelas yang ditulis permanen.
+## 3. Actual Training Configuration
 
-Pemeriksaan sintetis menghasilkan output `float32` dengan bentuk `(2, 8)`, seluruh nilainya finite. Jumlah parameter trainable adalah **892.648**. Nilai tersebut adalah hasil pemeriksaan model kosong dengan tensor sintetis, bukan hasil eksperimen kompetisi.
+| Item | Actual value |
+| --- | --- |
+| Experiment ID | `cnn_scratch_baseline_v1` |
+| Seed | 42 |
+| Device recorded in notebook | CUDA (NVIDIA GeForce RTX 3050 Laptop GPU) |
+| Input | RGB, direct resize 224 x 224, bilinear, float32, scaling [0, 1], no additional normalization |
+| Train augmentation | Enabled, profile `cnn_standard` |
+| Validation augmentation | Disabled; deterministic transform |
+| Batch size | 16 |
+| Loss | CrossEntropyLoss |
+| Optimizer | AdamW, learning rate 0.001, weight decay 0.0001 |
+| AMP | Enabled |
+| Gradient accumulation | 1 step |
+| Gradient clipping | Norm 1.0 |
+| Scheduler | ReduceLROnPlateau on `val_loss`, factor 0.5, patience 4, minimum LR 0.000001 |
+| Early stopping | `val_loss`, mode `min`, patience 10, min_delta 0.001 |
+| Requested maximum | 100 epochs |
+| Completed epochs | 75 epochs (stored as epoch 0 through 74) |
 
-## 4. Konfigurasi Awal
+The learning rate stepped down from 0.001 to 0.0000078125. The per-epoch history records the actual rate, losses, accuracies, macro metrics, duration, checkpoint status, and early-stopping status.
 
-- Image size: 224x224.
-- Batch size: 16; dokumentasi notebook memberi opsi 8 atau 4 untuk CUDA OOM.
-- Maximum epochs: 100.
-- Optimizer: AdamW, learning rate 0,001, weight decay 0,0001.
-- Loss: CrossEntropyLoss.
-- Random seed: 42.
-- AMP: aktif bila CUDA tersedia.
-- Gradient accumulation: 1 dan clipping norm: 1,0 sebagai baseline yang dapat diubah di notebook.
-- Early stopping: `val_loss`, mode `min`, patience 10, min delta 0,001.
-- Scheduler: ReduceLROnPlateau, factor 0,5, patience 4, minimum learning rate `1e-6`.
+## 4. CNN Architecture and Parameters
 
-Nilai ini tinggal di dictionary notebook dan tidak mengubah YAML global. `EXPERIMENT_ID` harus diganti untuk eksperimen baru supaya metrics, logs, dan checkpoint tidak tertimpa.
+`CNNFromScratch` is trained without pretrained weights. It contains four blocks with channel progression 32 -> 64 -> 128 -> 192. Each block consists of two 3 x 3 bias-free convolutions, BatchNorm, ReLU, and MaxPool2d. The classifier is AdaptiveAvgPool2d(1, 1), Flatten, Linear(192, 256), ReLU, Dropout(0.40), and Linear(256, 8).
 
-## 5. Integrasi TASK 03 dan TASK 04
+- Trainable parameters: **892,648**.
+- Adaptive pooling keeps the classifier small and supports the 224 x 224 input configuration.
+- The saved checkpoint confirms model identifier `cnn_from_scratch`, eight-class mapping, and seed 42.
 
-Notebook memakai `resolve_model_config` dan `load_active_class_mapping` dari preprocessing TASK 03, serta `create_dataloader` dari TASK 04. Training tidak membuat loop baru: cell manual memanggil `TrainingManager.fit`, yang mengoordinasikan `train_one_epoch`, `validate_one_epoch`, scheduler, early stopping, checkpoint best/last, metrics history, dan log per epoch.
+## 5. Training Outcome and Checkpoint Selection
 
-Best checkpoint disimpan menurut `val_loss`; notebook tidak mengasumsikan best accuracy. History aktual dapat dibaca dengan `load_history` dan divisualisasikan dengan `plot_learning_curves`. Cell evaluasi validation memuat best checkpoint lalu memanggil `validate_one_epoch` untuk loss, accuracy, macro precision, macro recall, macro F1, classification report, dan confusion matrix dalam urutan class mapping yang sama.
+The checkpoint monitor is `val_loss` in `min` mode. Therefore `best.pt` represents the minimum validation loss, not necessarily the epoch with the maximum validation accuracy or macro F1.
 
-## 6. Resume dan Continued Training
+| Metric | Best checkpoint (epoch 64) | Last epoch (epoch 74) |
+| --- | ---: | ---: |
+| Train loss | 1.036100 | 1.021970 |
+| Train accuracy | 65.67% | 64.40% |
+| Validation loss | **1.248915** | 1.302490 |
+| Validation accuracy | 59.01% | 59.27% |
+| Validation macro precision | 59.36% | 60.45% |
+| Validation macro recall | 59.12% | 59.28% |
+| Validation macro F1 | **58.69%** | 58.86% |
+| Learning rate | 0.00003125 | 0.0000078125 |
 
-Cell resume bersifat opsional dan default `RUN_RESUME = False`. Bila pengguna mengaktifkannya, `resume_from_checkpoint` memulihkan model, optimizer, scheduler, AMP GradScaler, epoch, early stopping, history, konfigurasi, class mapping, dan state RNG dari `last.pt`. Notebook hanya menampilkan epoch lanjutan; pengguna tetap harus memanggil `manager.fit` secara eksplisit untuk benar-benar melanjutkan eksperimen.
+The best checkpoint is epoch index 64 (the 65th completed epoch when counted from one). Its checkpoint payload records `best_metric = 1.2489149981316947` and a history length of 65. The last checkpoint is epoch index 74 and includes all 75 records.
 
-Untuk CNN from scratch, cell lanjutan memakai istilah continued training, bukan fine-tuning pretrained backbone. Ia membuat experiment ID baru, memuat `best.pt` melalui pemeriksaan kompatibilitas, membuat optimizer/scheduler/early stopping baru, dan menggunakan learning rate yang lebih kecil. Fase ini juga default tidak aktif.
+Early stopping occurred at epoch 74 because `val_loss` did not improve by at least 0.001 for 10 consecutive epochs after the epoch-64 best result. Consequently, the configured 100-epoch maximum was not reached.
 
-## 7. Monitoring dan Visualisasi
+### Difference Between Best Checkpoint and Peak Accuracy/F1
 
-Saat training dijalankan pengguna, `TrainingManager` menyimpan history aktual pada `outputs/metrics/{experiment_id}.json` dan log JSONL pada `outputs/logs/{experiment_id}.jsonl`. History mencakup loss/accuracy train, loss/accuracy/macro-F1 validation, learning rate, durasi, best epoch, status checkpoint, dan status early stopping.
+Validation accuracy reaches its maximum of **59.79%** at epoch 72, and validation macro F1 reaches its maximum of **59.38%** at epoch 68. Neither epoch improved `val_loss` below 1.248915, so neither replaced `best.pt`. The validation report and confusion matrix in this document are from `best.pt` at epoch 64, which is the intended selection under the configured monitor.
 
-Notebook hanya menghasilkan learning curve apabila history nyata ditemukan. Bila belum ada training, cell menampilkan pesan informatif. Tidak ada angka akurasi, loss, F1, confusion matrix, atau learning curve fiktif pada notebook maupun dokumentasi ini.
+## 6. Learning Curves
 
-## 8. Cara Menjalankan
+The recorded training/validation curves are stored at `outputs/figures/cnn_scratch_baseline_v1_learning_curves.png`.
 
-1. Aktifkan `venv_gelarrasa`, lalu buka `notebooks/01_cnn_from_scratch.ipynb` melalui Antigravity IDE.
-2. Jalankan cell dari awal sampai konfigurasi, validasi data, loader, preview, dan inisialisasi manager.
-3. Tinjau batch size serta penggunaan GPU; ubah hanya konfigurasi notebook bila diperlukan.
-4. Set `RUN_TRAINING = True` dan jalankan cell training secara manual.
-5. Setelah training, baca history dan learning curve; gunakan validation evaluation manual bila best checkpoint tersedia.
-6. Jangan gunakan internal test untuk tuning. Resume atau continued training memerlukan keputusan eksplisit pengguna.
+![CNN From Scratch learning curves](../outputs/figures/cnn_scratch_baseline_v1_learning_curves.png)
 
-## 9. Pengujian Statis Aktual
+The curves show substantial early progress: validation loss declines from 1.839558 at epoch 0 to 1.248915 at epoch 64, while validation accuracy rises from 33.68% to 59.01%. After the best epoch, validation loss fluctuates upward and finishes 0.053575 higher at 1.302490. The scheduler progressively reduces the learning rate, but no further `val_loss` improvement passes the early-stopping threshold.
 
-Notebook tervalidasi sebagai Jupyter Notebook v4 dengan **42 cell**: 23 Markdown dan 19 code cell. Seluruh code cell berhasil dikompilasi tanpa dieksekusi. Notebook memiliki 22 heading bagian yang mengikuti urutan eksperimen. Notebook tidak menyimpan output eksekusi. Flag `RUN_TRAINING`, `RUN_VALIDATION_EVALUATION`, `RUN_RESUME`, dan `RUN_CONTINUED_TRAINING` semuanya berstatus `False` secara default.
+## 7. Best-Checkpoint Validation Classification Report
 
-Arsitektur diuji terpisah dengan tensor sintetis CPU, bukan DataLoader kompetisi: input `(2, 3, 224, 224)` menghasilkan `(2, 8)` dengan dtype `torch.float32` dan nilai finite. Pengujian tidak menjalankan backward pass atau optimizer step.
+This report is the validation evaluation already recorded in the notebook for `best.pt`; it covers 383 validation samples.
 
-## 10. Keterbatasan dan Langkah Berikutnya
+| Class | Precision | Recall | F1-score | Support |
+| --- | ---: | ---: | ---: | ---: |
+| cardboard | 0.611111 | 0.846154 | 0.709677 | 52 |
+| electronic | 0.738095 | 0.756098 | 0.746988 | 41 |
+| foodwaste | 0.750000 | 0.673469 | 0.709677 | 49 |
+| glass | 0.593750 | 0.463415 | 0.520548 | 41 |
+| metal | 0.380000 | 0.395833 | 0.387755 | 48 |
+| paper | 0.518519 | 0.622222 | 0.565657 | 45 |
+| plastic | 0.632653 | 0.484375 | 0.548673 | 64 |
+| textile | 0.525000 | 0.488372 | 0.506024 | 43 |
+| accuracy | 0.590078 | 0.590078 | 0.590078 | 383 |
+| macro average | 0.593641 | 0.591242 | 0.586875 | 383 |
+| weighted average | 0.594704 | 0.590078 | 0.586390 | 383 |
 
-Notebook belum memiliki hasil performa karena training memang belum dijalankan. Kualitas arsitektur, learning rate, augmentasi, dan regularisasi hanya dapat dinilai setelah eksperimen nyata yang dikendalikan pengguna. Setelah baseline selesai, langkah berikutnya adalah merekam hasil validation secara disiplin dan membandingkan eksperimen tanpa memakai internal test berulang kali.
+`electronic` has the highest F1-score (0.746988). `metal` is the weakest class (F1 0.387755), indicating the largest opportunity for representation improvement.
+
+## 8. Best-Checkpoint Validation Confusion Matrix
+
+Rows are actual labels and columns are predicted labels. This is transcribed from the confusion-matrix figure saved in the executed notebook output. Diagonal entries total 226 of 383 samples, consistent with the recorded 59.01% validation accuracy.
+
+| Actual \ Predicted | cardboard | electronic | foodwaste | glass | metal | paper | plastic | textile |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| cardboard | 44 | 0 | 1 | 1 | 2 | 3 | 1 | 0 |
+| electronic | 0 | 31 | 0 | 3 | 1 | 1 | 3 | 2 |
+| foodwaste | 5 | 3 | 33 | 0 | 3 | 1 | 0 | 4 |
+| glass | 6 | 1 | 3 | 19 | 4 | 5 | 3 | 0 |
+| metal | 5 | 2 | 1 | 5 | 19 | 4 | 5 | 7 |
+| paper | 5 | 2 | 0 | 0 | 8 | 28 | 1 | 1 |
+| plastic | 2 | 2 | 5 | 3 | 8 | 8 | 31 | 5 |
+| textile | 5 | 1 | 1 | 1 | 5 | 4 | 5 | 21 |
+
+The dominant errors are consistent with the per-class report: `metal` is confused with `textile` (7 samples) and several other material classes; `plastic` is confused with `metal` and `paper` (8 samples each); and `glass` is often predicted as `cardboard` (6) or `paper` (5).
+
+## 9. Generalization Analysis
+
+There is a mild-to-moderate overfitting signal after epoch 64, rather than a severe collapse or a clear underfitting-only pattern:
+
+- At the best epoch, validation loss exceeds training loss by 0.212815 and training accuracy exceeds validation accuracy by 6.66 percentage points.
+- At the last epoch, the validation/train loss gap grows to 0.280521 and validation loss is 0.053575 above the best value, while validation accuracy remains near 59%.
+- Training accuracy remains modest (maximum 66.64%), and macro F1 peaks below 60%; the model is not simply memorizing the training set. Its limited feature capacity and the small dataset also leave room for under-capacity behavior on difficult classes.
+- The correct operational choice is to retain `best.pt`, because it has the best configured validation objective and precedes the post-best validation-loss degradation.
+
+## 10. Artifact Locations
+
+| Artifact | Location |
+| --- | --- |
+| Best checkpoint | `models/checkpoints/cnn_scratch_baseline_v1/best.pt` |
+| Last checkpoint | `models/checkpoints/cnn_scratch_baseline_v1/last.pt` |
+| Per-epoch metric history | `outputs/metrics/cnn_scratch_baseline_v1.json` |
+| Baseline comparison summary | `outputs/metrics/cnn_scratch_baseline_v1_summary.json` |
+| Learning curves | `outputs/figures/cnn_scratch_baseline_v1_learning_curves.png` |
+| Executed experiment and stored validation outputs | `notebooks/01_cnn_from_scratch.ipynb` |
+
+## 11. Limitations of This Baseline
+
+- The model learns all visual features from only 1,340 training images; it has no pretrained visual representation.
+- The eight classes include visually similar materials, as reflected in the metal, plastic, paper, glass, and textile confusions.
+- The baseline uses a fixed direct-resize input and simple CNN capacity; it may not preserve or represent fine material texture as effectively as a pretrained backbone.
+- Results are validation-only for selection. The internal test split remains untouched and must not be used for iterative model choice.
+- This is one seed/configuration run. Improvements should be compared under the same split and validation protocol before any final internal-test decision.
+
+## 12. Recommended Next Pretrained Experiment
+
+Run the next model as a separate experiment ID using a pretrained backbone such as MobileNetV3, EfficientNet, or ResNet50. Keep the V1 final manifest, class mapping, validation split, and no-internal-test-tuning rule unchanged. Record the same `val_loss`, validation accuracy, macro precision/recall/F1, per-class report, confusion matrix, and checkpoint monitor in the comparison notebook.
+
+For a fair comparison, select each candidate checkpoint by the predeclared validation monitor, distinguish that checkpoint from its peak accuracy/F1 epoch when they differ, and compare per-class improvements with special attention to `metal`, `plastic`, `glass`, and `textile`.
