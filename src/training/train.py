@@ -1,7 +1,7 @@
 """One-epoch custom PyTorch training loop; it never starts training on import."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 import torch
 from torch import nn
@@ -18,7 +18,9 @@ def train_one_epoch(model: nn.Module, data_loader: DataLoader, criterion: nn.Mod
                     scaler: torch.amp.GradScaler | None = None, amp_enabled: bool = True,
                     gradient_accumulation_steps: int = 1, gradient_clip_norm: float | None = None,
                     show_progress: bool = True, epoch: int | None = None,
-                    max_epochs: int | None = None) -> tuple[dict[str, float | int], torch.amp.GradScaler | None]:
+                    max_epochs: int | None = None,
+                    train_mode_callback: Callable[[nn.Module], None] | None = None,
+) -> tuple[dict[str, float | int], torch.amp.GradScaler | None]:
     """Train one epoch with sample-weighted metrics and correct final accumulation window."""
     if gradient_accumulation_steps <= 0:
         raise ValueError("gradient_accumulation_steps must be positive.")
@@ -28,6 +30,8 @@ def train_one_epoch(model: nn.Module, data_loader: DataLoader, criterion: nn.Mod
     use_amp = amp_enabled and target_device.type == "cuda" and torch.cuda.is_available()
     active_scaler = scaler or _make_scaler(use_amp)
     model.train()
+    if train_mode_callback is not None:
+        train_mode_callback(model)
     optimizer.zero_grad(set_to_none=True)
     total_loss, total_correct, total_samples = 0.0, 0, 0
     batch_count = len(data_loader)

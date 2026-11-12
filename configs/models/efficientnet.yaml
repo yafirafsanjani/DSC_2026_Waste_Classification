@@ -1,10 +1,14 @@
-﻿model_type: efficientnet_b0
-framework: timm
+model_type: efficientnet_b2
+framework: torchvision
 pretrained: true
-weights: null
+weights: EfficientNet_B2_Weights.IMAGENET1K_V1
 preprocessing:
-  profile: timm_imagenet_fallback
+  profile: torchvision_imagenet_fallback
   metadata_priority: official
+  overrides:
+    image_size: [288, 288]
+    resize_size: 288
+    interpolation: bicubic
 augmentation:
   enabled: true
   profile: pretrained_light

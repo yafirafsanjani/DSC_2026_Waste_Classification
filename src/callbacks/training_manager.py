@@ -4,7 +4,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 import torch
 from torch import nn
@@ -35,6 +35,7 @@ class TrainingManager:
     training_config: Mapping[str, Any] = field(default_factory=dict)
     seed: int = 42
     history: list[dict[str, Any]] = field(default_factory=list)
+    train_mode_callback: Callable[[nn.Module], None] | None = None
 
     def __post_init__(self) -> None:
         self.project_root = Path(self.project_root).resolve()
@@ -64,6 +65,7 @@ class TrainingManager:
             self.model, train_loader, self.criterion, self.optimizer, self.device, scaler=self.scaler,
             amp_enabled=amp_enabled, gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_clip_norm=gradient_clip_norm, show_progress=show_progress, epoch=epoch, max_epochs=max_epochs,
+            train_mode_callback=self.train_mode_callback,
         )
         validation_metrics = validate_one_epoch(self.model, validation_loader, self.criterion, self.class_mapping, self.device)
         metric_name = self.early_stopping.monitor.removeprefix("val_")

@@ -109,10 +109,12 @@ def format_epoch_summary(record: Mapping[str, Any], max_epochs: int | None = Non
     return (
         f"Epoch {epoch_label} | train_loss={float(record['train_loss']):.4f} "
         f"train_acc={float(record['train_accuracy']):.2%} | val_loss={float(record['val_loss']):.4f} "
-        f"val_acc={float(record['val_accuracy']):.2%} | macro_f1={float(record['val_macro_f1']):.4f} "
-        f"lr={learning_rate:.2e} | {float(record['epoch_seconds']):.1f}s | "
+        f"val_acc={float(record['val_accuracy']):.2%} | macro_precision={float(record['val_macro_precision']):.4f} "
+        f"macro_recall={float(record['val_macro_recall']):.4f} macro_f1={float(record['val_macro_f1']):.4f} "
+        f"lr={learning_rate:.2e} lr_changed={bool(record.get('learning_rate_changed', False))} "
+        f"rates={record.get('previous_learning_rates')}->{record.get('learning_rates')} | {float(record['epoch_seconds']):.1f}s | "
         f"best_epoch={int(record['best_epoch']) + 1} best_val_loss={float(record['best_validation_loss']):.4f} | "
-        f"early_stop={int(record['early_stopping_counter'])} | {checkpoint_status}"
+        f"early_stop={int(record['early_stopping_counter'])} | {checkpoint_status} | last_saved=True"
     )
 
 
