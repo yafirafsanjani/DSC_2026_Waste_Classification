@@ -36,22 +36,21 @@ else:
 
 SECTIONS.append({
     "id": 28,
-    "title": "28. Manual Pseudo-Label Generation",
-    "markdown": r"""# 28. Manual Pseudo-Label Generation (Raw Predictions)
+    "title": "28. Pseudo-Label Generation",
+    "markdown": r"""# 28. Pseudo-Label Generation (Unlabeled Pool)
 
-Menghasilkan prediksi pseudo-label mentah dari Teacher pada seluruh 1.876 citra unlabeled:
-- Dilindungi oleh flag `RUN_PSEUDO_LABEL_GENERATION`.
-- Menghitung probabilitas softmax untuk setiap citra.
-- Mencatat: `image_id`, `relative_path`, `predicted_class`, `predicted_idx`, `confidence`.
-- Menyimpan hasil mentah ke `outputs/metrics/pseudo_labels_raw.csv`.""",
+Menghasilkan prediksi pseudo-label untuk seluruh 1.877 citra unlabeled menggunakan model Final Teacher:
+- Jika berkas pseudo_labels.csv telah tersedia, data dimuat langsung dari disk.
+- Jika belum, inferensi dijalankan secara otomatis dengan output memuat image_id, predicted_class, confidence_score, dan metadata checkpoint Teacher.""",
     "code": r"""# ==============================================================================
-# SECTION 28: MANUAL PSEUDO-LABEL GENERATION
+# SECTION 28: PSEUDO-LABEL GENERATION
 # ==============================================================================
-RAW_PSEUDO_PATH = OUTPUT_METRICS_DIR / "pseudo_labels_raw.csv"
+RAW_PSEUDO_PATH = MANIFEST_DIR / "pseudo_labels.csv"
 
 def generate_raw_pseudo_labels(
     model: nn.Module,
     unlabeled_df: pd.DataFrame,
+    output_path: Path,
     batch_size: int = 16,
     device: torch.device = DEVICE
 ) -> pd.DataFrame:
@@ -59,7 +58,7 @@ def generate_raw_pseudo_labels(
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
     
     records = []
-    print(f"Menghasilkan pseudo-label mentah pada {len(dataset)} citra unlabeled...")
+    print(f"Menghasilkan pseudo-label pada {len(dataset)} citra unlabeled...")
     
     model.eval()
     with torch.inference_mode():
@@ -74,22 +73,26 @@ def generate_raw_pseudo_labels(
                     "image_id": str(img_id),
                     "predicted_idx": int(pred_idx),
                     "predicted_class": IDX_TO_CLASS[int(pred_idx)],
-                    "confidence": float(conf)
+                    "confidence": float(conf),
+                    "confidence_score": float(conf),
+                    "teacher_checkpoint": TEACHER_BEST_CKPT.name if TEACHER_BEST_CKPT.exists() else "teacher_best"
                 })
                 
     df_pred = pd.DataFrame(records)
     merged = pd.merge(unlabeled_df[["image_id", "relative_path", "sha256"]], df_pred, on="image_id")
-    merged.to_csv(RAW_PSEUDO_PATH, index=False)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(output_path, index=False)
     return merged
 
 if RAW_PSEUDO_PATH.exists():
-    raw_pseudo_df = pd.read_csv(RAW_PSEUDO_PATH)
-    print(f"[LOADED] Raw pseudo-labels dimuat dari {RAW_PSEUDO_PATH} ({len(raw_pseudo_df)} baris).")
-elif RUN_PSEUDO_LABEL_GENERATION and inference_teacher is not None and len(unlabeled_pool_df) > 0:
-    raw_pseudo_df = generate_raw_pseudo_labels(inference_teacher, unlabeled_pool_df, batch_size=16)
-    print(f"[COMPLETED] Raw pseudo-labels berhasil disimpan ke {RAW_PSEUDO_PATH}")
+    raw_pseudo_df = pd.read_csv(RAW_PSEUDO_PATH, dtype={"image_id": str})
+    print(f"[LOADED] Pseudo-labels dimuat dari {RAW_PSEUDO_PATH} ({len(raw_pseudo_df)} baris).")
+elif inference_teacher is not None and len(unlabeled_pool_df) > 0:
+    print(f"[RUN-ALL] Menghasilkan pseudo-label pada {len(unlabeled_pool_df)} citra unlabeled...")
+    raw_pseudo_df = generate_raw_pseudo_labels(inference_teacher, unlabeled_pool_df, output_path=RAW_PSEUDO_PATH, batch_size=16)
+    print(f"[COMPLETED] Pseudo-labels berhasil disimpan ke {RAW_PSEUDO_PATH}")
 else:
-    print("[STATUS] RUN_PSEUDO_LABEL_GENERATION is False atau prasyarat belum terpenuhi.")
+    print("[STATUS] Prasyarat inference_teacher atau unlabeled pool belum siap.")
     raw_pseudo_df = pd.DataFrame()"""
 })
 
@@ -143,32 +146,41 @@ analyze_confidence_scores(raw_pseudo_df)"""
 SECTIONS.append({
     "id": 30,
     "title": "30. Pseudo-Label Filtering",
-    "markdown": r"""# 30. Pseudo-Label Filtering (Threshold >= 0.95)
+    "markdown": r"""# 30. Pseudo-Label Filtering
 
-Penyaringan pseudo-label dengan ambang batas ketat:
-- Parameter: `CONFIDENCE_THRESHOLD = 0.95` (dapat disesuaikan jika diperlukan).
-- Hanya citra dengan `confidence >= 0.95` yang diterima ke dalam pool pelatihan Student.
-- Dilindungi oleh flag `RUN_PSEUDO_LABEL_SELECTION`.
-- Manifest disimpan ke `data/manifests/fewshot_pseudolabel_b2_v1/pseudo_labels_accepted.csv`.""",
+Menyaring prediksi pseudo-label dengan confidence threshold ketat (default $\\ge 0.95$):
+- Prediksi yang lolos disimpan ke data/manifests/fewshot_pseudolabel_b2_v1/accepted_pseudo_labels.csv.
+- Setiap sampel yang lolos diberikan bobot loss pseudo (default 0.5) untuk pelatihan model Student semi-supervised.""",
     "code": r"""# ==============================================================================
 # SECTION 30: PSEUDO-LABEL FILTERING
 # ==============================================================================
-CONFIDENCE_THRESHOLD = 0.95
-ACCEPTED_PSEUDO_PATH = MANIFEST_DIR / "pseudo_labels_accepted.csv"
+CONFIDENCE_THRESHOLD = CONFIG.get("pseudo_label_confidence_threshold", 0.95)
+ACCEPTED_PSEUDO_PATH = MANIFEST_DIR / "accepted_pseudo_labels.csv"
 
-def filter_pseudo_labels(raw_df: pd.DataFrame, threshold: float = 0.95) -> pd.DataFrame:
-    filtered = raw_df[raw_df["confidence"] >= threshold].copy().reset_index(drop=True)
-    filtered.to_csv(ACCEPTED_PSEUDO_PATH, index=False)
-    return filtered
+def filter_pseudo_labels(
+    raw_df: pd.DataFrame,
+    threshold: float,
+    output_path: Path
+) -> pd.DataFrame:
+    if raw_df.empty or "confidence" not in raw_df.columns:
+        print("[PERINGATAN] Data pseudo-labels mentah kosong.")
+        return pd.DataFrame()
+        
+    accepted = raw_df[raw_df["confidence"] >= threshold].copy()
+    accepted["pseudo_weight"] = CONFIG.get("pseudo_label_loss_weight", 0.5)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    accepted.to_csv(output_path, index=False)
+    return accepted
 
 if ACCEPTED_PSEUDO_PATH.exists():
-    accepted_pseudo_df = pd.read_csv(ACCEPTED_PSEUDO_PATH)
-    print(f"[LOADED] Accepted pseudo-labels dimuat dari {ACCEPTED_PSEUDO_PATH} ({len(accepted_pseudo_df)} baris).")
-elif RUN_PSEUDO_LABEL_SELECTION and len(raw_pseudo_df) > 0:
-    accepted_pseudo_df = filter_pseudo_labels(raw_pseudo_df, threshold=CONFIDENCE_THRESHOLD)
-    print(f"[CREATED] {len(accepted_pseudo_df)} citra diterima dengan threshold >= {CONFIDENCE_THRESHOLD}.")
+    accepted_pseudo_df = pd.read_csv(ACCEPTED_PSEUDO_PATH, dtype={"image_id": str})
+    print(f"[LOADED] Accepted pseudo-labels dimuat dari disk: {len(accepted_pseudo_df)} citra.")
+elif len(raw_pseudo_df) > 0:
+    print(f"[RUN-ALL] Menyaring pseudo-label dengan confidence threshold >= {CONFIDENCE_THRESHOLD}...")
+    accepted_pseudo_df = filter_pseudo_labels(raw_pseudo_df, CONFIDENCE_THRESHOLD, ACCEPTED_PSEUDO_PATH)
+    print(f"[SAVED] {len(accepted_pseudo_df)} / {len(raw_pseudo_df)} pseudo-labels diterima dan disimpan ke {ACCEPTED_PSEUDO_PATH}")
 else:
-    print("[STATUS] RUN_PSEUDO_LABEL_SELECTION is False atau raw pseudo-labels belum tersedia.")
+    print("[STATUS] Raw pseudo-labels belum tersedia.")
     accepted_pseudo_df = pd.DataFrame()"""
 })
 

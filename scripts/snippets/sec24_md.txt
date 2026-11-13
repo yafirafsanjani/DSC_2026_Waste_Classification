@@ -1,0 +1,6 @@
+# 24. Final Teacher Training (All 40 Samples)
+
+Pelatihan model **Final Teacher** menggunakan seluruh 40 citra berlabel manual yang sah:
+- Jika checkpoint TEACHER_BEST_CKPT telah tersedia, checkpoint dimuat langsung dari disk.
+- Jika belum, pelatihan otomatis dijalankan selama 15 epoch dengan optimizer AdamW dan learning rate 0.001.
+- Checkpoint dan riwayat disimpan secara persisten untuk digunakan pada tahap pseudo-labeling.

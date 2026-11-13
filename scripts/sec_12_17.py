@@ -214,7 +214,7 @@ class UnlabeledDataset(Dataset):
 
 class CompetitionTestDataset(Dataset):
     def __init__(self, image_paths: List[Path], transform: Optional[Callable] = None):
-        self.image_paths = sorted(image_paths, key=lambda p: p.name)
+        self.image_paths = list(image_paths)
         self.transform = transform
 
     def __len__(self) -> int:
@@ -246,7 +246,7 @@ Visualisasi distribusi sampel berlabel (tepat 5 citra per kelas) dan proporsi da
 def plot_dataset_proportions(labeled_df: pd.DataFrame, unlabeled_df: pd.DataFrame, test_dir: Path):
     labeled_count = len(labeled_df)
     unlabeled_count = len(unlabeled_df)
-    test_count = len(list(test_dir.glob("*.*"))) if test_dir.exists() else 0
+    test_count = len([p for p in test_dir.iterdir() if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]]) if test_dir.exists() else 0
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     

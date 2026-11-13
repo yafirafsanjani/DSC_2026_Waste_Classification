@@ -1,166 +1,187 @@
-# TASK 08: Unified Few-Shot EfficientNet-B2 + Pseudo-Labeling Pipeline
+# TASK 08: Unified Few-Shot EfficientNet-B2 + Pseudo-Labeling Pipeline (Fully Reproducible Run-All)
 
-**Proyek**: `DSC_2026_Waste_Classification`  
-**Notebook**: `notebooks/08_fewshot_pseudolabeling_efficientnet_b2.ipynb`  
-**Dokumen Pendukung**: `docs/TASK_08_Unified_FewShot_PseudoLabeling.md`  
-**Peran**: Senior Computer Vision Engineer, Machine Learning Engineer, dan MLOps Engineer  
-
----
-
-## 1. Ringkasan Eksekutif & Tujuan Eksperimen
-
-Eksperimen TASK 08 mengimplementasikan pipeline klasifikasi citra semi-supervised mandiri (*fully self-contained*) dalam **satu berkas notebook tunggal** (`notebooks/08_fewshot_pseudolabeling_efficientnet_b2.ipynb`). Pipeline ini dirancang khusus untuk mematuhi regulasi kompetisi baru dengan skenario **Few-Shot Learning**:
-
-1. **Batasan Anggaran Label Manual**: Maksimal **5 citra per kelas** atau total **maksimal 40 citra manual** untuk 8 kelas target.
-2. **Sisa Dataset Training**: Dialokasikan sebagai **Unlabeled Pool** (~1.876 citra) tanpa akses terhadap ground-truth label asli.
-3. **Data Test Kompetisi**: Sebanyak 480 citra pada `data/competition/test/` hanya digunakan untuk inferensi akhir (*submission generation*), tanpa kebocoran data (*zero leakage*).
-4. **Metodologi**: Paradigma Teacher-Student Pseudo-Labeling berbasis backbone **EfficientNet-B2 pretrained ImageNet-1K**, disempurnakan dengan 5-Fold Stratified Cross-Validation, penyaringan keyakinan tinggi (*high-confidence filtering* $\ge 0.95$), dan *weighted semi-supervised loss*.
-
-Notebook ini disiapkan untuk dikumpulkan langsung kepada panitia/juri lomba, sehingga **seluruh fungsi inti diimplementasikan secara mandiri di dalam notebook tanpa ketergantungan pada modul `src/` proyek**.
+**Proyek**: DSC_2026_Waste_Classification  
+**Notebook**: 
+otebooks/08_fewshot_pseudolabeling_efficientnet_b2.ipynb  
+**Dokumen Pendukung**: docs/TASK_08_Unified_FewShot_PseudoLabeling.md  
+**Arsitektur Model**: EfficientNet-B2 (Pretrained ImageNet-1K V1)  
+**Tipe Pipeline**: Semi-Supervised Few-Shot Learning + Offline Pseudo-Labeling  
+**Moda Eksekusi**: **Kernel Restart & Run All (Fully Automated, Deterministic, Single-Notebook)**  
 
 ---
 
-## 2. Status Verifikasi Regulasi & Approval Gate
+## 1. Ringkasan Eksekutif & Tujuan Refactoring Run-All
 
-- Dokumen regulasi resmi belum ditemukan di direktori `docs/` workspace.
-- Oleh karena itu, notebook menerapkan **manual approval gate** dengan flag `RULES_VERIFIED = False` secara default.
-- Pipeline menegakkan 3 pilar kepatuhan:
-  - Kuota pelabelan manual $\le 5$ sampel per kelas ($\le 40$ sampel total) diverifikasi melalui validator otomatis (`verify_labeling_budget`).
-  - Larangan pembacaan label test resmi atau label sample submission sebagai target.
-  - Pseudo-labeling murni dibangkitkan dari model Teacher yang sah tanpa interpolasi ground truth lama.
-
----
-
-## 3. Dataset Management & Arsitektur Partisi
-
-### 3.1 Sumber Data
-- **Raw Training Images**: `data/extracted/v1/train` (1.916 citra pada 8 subfolder kelas).
-- **Competition Test Images**: `data/competition/test` (480 citra tanpa label).
-- **Sample Submission Template**: `data/competition/SampleSubmission_DSC.csv`.
-
-### 3.2 Partisi & Isolasi Anti-Leakage
-| Partisi | Jumlah Sampel | Peran | Proteksi Kebocoran |
-| :--- | :---: | :--- | :--- |
-| **Labeled Pool** | 40 citra | Pelatihan Teacher & Student (5/kelas) | Diverifikasi kuota ketat, hash SHA-256 dicatat |
-| **Unlabeled Pool** | ~1.876 citra | Target Pseudo-Labeling | Kolom `class_name` & `class_idx` dihapus permanen |
-| **CV Folds** | 5 fold (32 train, 8 val) | Estimasi performa Out-Of-Fold Teacher | Folds terisolasi 100% tanpa tumpang tindih |
-| **Competition Test** | 480 citra | Inferensi Submission Kaggle | Read-only hash audit, 0 overlap dengan train |
+Eksperimen TASK 08 menyediakan satu berkas notebook Jupyter mandiri (*fully self-contained single notebook*) yang memenuhi ketentuan pengumpulan kompetisi Preliminary Round **Data Science Competition (DSC) Gelar Rasa 2026**:
+1. **Single Notebook Requirement**: Seluruh tahapan pengerjaan (audit, preprocessing, CV, teacher training, pseudo-labeling, student training, evaluasi, hingga pembuatan submission CSV) berada dalam satu file 
+otebooks/08_fewshot_pseudolabeling_efficientnet_b2.ipynb.
+2. **Kernel Restart & Run All Compatible**: Seluruh 10 manual execution flags (RULES_VERIFIED, RUN_FEWSHOT_PREPARATION, dsb.) telah dieliminasi dan digantikan oleh kamus konfigurasi eksperimen terpusat (CONFIG). Juri atau peserta dapat menjalankan seluruh alur secara otomatis dari awal hingga akhir tanpa intervensi manual atau input interaktif.
+3. **Kepatuhan Aturan Manual Labeling Ketat**:
+   - Kuota manual labeling dibatasi maksimal **5 citra per kelas** (total maksimal **40 citra**) dari 1.920 citra train resmi.
+   - Menggunakan berkas anotasi resmi peserta pada: data/manifests/fewshot_pseudolabel_b2_v1/labeled_pool_40.csv.
+   - Jika berkas belum diisi, sistem secara otomatis membuat template di manual_annotation_template.csv dan menghentikan eksekusi dengan FileNotFoundError informatif tanpa membuat label palsu atau membaca ground truth lama.
+4. **Anti-Leakage & Karantina Tabrakan Data**:
+   - 3 citra train yang memiliki kesamaan hash SHA-256 persis dengan citra test kompetisi dikarantina secara otomatis (	rain/1046.jpg == 	est/017.jpg, 	rain/1135.jpg == 	est/201.jpg, 	rain/1821.jpg == 	est/042.jpg).
+   - Unlabeled pool berisi 1.877 citra train resmi tanpa kolom label.
 
 ---
 
-## 4. Spesifikasi Preprocessing & Augmentasi
+## 2. Struktur Alur Eksekusi Berurutan (54 Bagian / 108 Cell)
 
-### 4.1 Standar Preprocessing EfficientNet-B2 (Evaluasi & Inferensi)
-Mengikuti metadata bobot resmi `EfficientNet_B2_Weights.IMAGENET1K_V1`:
-- Format: RGB Tensor float32 skala $[0.0, 1.0]$
-- Resize: Resolusi 288 (Bicubic Interpolation, antialias=True)
-- Center Crop: $288 	imes 288$ piksel
-- Normalisasi ImageNet:
-  - Mean: `[0.485, 0.456, 0.406]`
-  - Std: `[0.229, 0.224, 0.225]`
+Pipeline terstruktur secara sistematis ke dalam 7 bagian logis (A-G):
 
-### 4.2 Augmentasi Pelatihan Terkendali
-Untuk rejim few-shot, augmentasi mencegah *memorization* tanpa merusak karakteristik semantik kelas:
-- `RandomHorizontalFlip(p=0.5)`
-- `RandomRotation(degrees=15)`
-- `RandomAffine(degrees=0, shear=10)`
-- `ColorJitter(brightness=0.10)`
-- Resize 288 & Center Crop $288 	imes 288$ dengan Normalisasi ImageNet.
+### BAGIAN A - PERSIAPAN DATASET & INTEGRITAS (Section 01-11)
+- **01. Project Overview**: Deskripsi pipeline, meta-informasi, dan regulasi kompetisi.
+- **02. Environment Setup & Centralized Configuration**: Inisialisasi library, seed deterministik (42), deteksi hardware GPU RTX 3050 / CPU fallback, AMP, dan kamus konfigurasi terpusat CONFIG.
+- **03. Official Rules Verification & Automated Compliance**: Audit deteksi handbook resmi PDF di docs/ dan penegakan batas aturan secara terprogram (ssert max_labels_per_class <= 5, ssert max_total_labels <= 40).
+- **04. Dataset Path Configuration**: Resolusi direktori resmi:
+  - data/competition/train/: 1.920 citra tanpa label.
+  - data/competition/test/: 480 citra test tanpa label.
+  - data/competition/SampleSubmission_DSC.csv.
+- **05. Dataset Integrity Audit**: Pemindaian integritas citra, format, dan dimensi.
+- **06. Class Definition & Mappings**: 8 kelas target resmi berurutan abjad (cardboard, electronic, oodwaste, glass, metal, paper, plastic, 	extile).
+- **07. Labeling Budget Verification**: Fungsi validasi kuota labeling (<= 5 per kelas, <= 40 total).
+- **08. Manual Labeled Pool Validation & Ingestion**: Validasi ketersediaan dan keabsahan labeled_pool_40.csv, pembuatan otomatis manual_annotation_template.csv, verifikasi integritas hash anti-leakage.
+- **09. Unlabeled Pool Preparation**: Membangun manifest 1.877 citra unlabeled bersih tanpa kolom label dari data train resmi.
+- **10. Duplicate and Leakage Audit**: Deteksi 3 citra train yang identik dengan test dan pengamanan karantina.
+- **11. Few-Shot Validation Protocol**: Pembuatan 5-Fold Stratified Cross-Validation (32 train, 8 val per fold).
 
----
+### BAGIAN B - PREPROCESSING & AUGMENTASI (Section 12-17)
+- **12. Image Preprocessing**: Transformasi resmi EfficientNet-B2 (Resize 288x288, ImageNet Mean/Std).
+- **13. Training Augmentation**: Augmentasi terkendali (Horizontal Flip, Rotasi 15 derajat, Shear 10 derajat, Color Jitter 10%).
+- **14. Visualization of Original Images**: Inspeksi visual sampel citra berlabel per kelas.
+- **15. Visualization of Augmented Images**: Inspeksi variasi augmentasi stokastik.
+- **16. Dataset and DataLoader Construction**: Definisi FewShotLabeledDataset dan UnlabeledDataset (anti-leakage contract).
+- **17. Class Distribution Visualization**: Distribusi data berlabel vs unlabeled pool.
 
-## 5. Arsitektur Model: Teacher & Student
+### BAGIAN C - FEW-SHOT TEACHER (Section 18-26)
+- **18. Teacher Model Initialization**: EfficientNet-B2 Pretrained ImageNet-1K V1 dengan classifier head 8 kelas (1.408 -> 8).
+- **19. Model Architecture Summary**: Backbone beku, 11.272 parameter trainable, uji forward pass sintetis (2, 8).
+- **20. Few-Shot Cross-Validation Configuration**: Hyperparameter CV (AdamW, lr=1e-3, early stopping patience=5).
+- **21. Cross-Validation Execution**: Pelatihan otomatis 5-fold CV atau pemuatan riwayat jika checkpoint telah ada.
+- **22. Cross-Validation Results Summary**: Rekapitulasi rata-rata Val Loss, Val Accuracy, dan Val Macro F1.
+- **23. Final Teacher Training Configuration**: Parameter pelatihan 40 citra berlabel (15 epoch).
+- **24. Final Teacher Training**: Pelatihan otomatis Final Teacher model dan penyimpanan checkpoint persisten.
+- **25. Teacher Training History & Curves**: Visualisasi grafik konvergensi pelatihan Teacher.
+- **26. Teacher Validation Diagnostics**: Analisis diagnostik bias dan risiko konfirmasi Teacher.
 
-### 5.1 EfficientNet-B2 Backbone
-- **Model Dasar**: `torchvision.models.efficientnet_b2(weights=EfficientNet_B2_Weights.IMAGENET1K_V1)`
-- **Modifikasi Classifier**: Linear layer akhir diubah dari $1408 ightarrow 8$ kelas, mempertahankan layer Dropout (0.3).
-- **Kebijakan Pembekuan (Freezing)**: Seluruh layer ekstraksi fitur (`features.parameters()`) dibekukan untuk mengisolasi gradien hanya pada classifier head:
-  - Total Parameter: **7.712.266**
-  - Parameter Trainable: **11.272** (Head linear layer: $1408 	imes 8 + 8$)
-  - Parameter Frozen: **7.700.994**
+### BAGIAN D - PSEUDO-LABELING (Section 27-33)
+- **27. Unlabeled Inference Setup**: Penyiapan DataLoader inferensi pada 1.877 citra unlabeled pool.
+- **28. Pseudo-Label Generation**: Inferensi probabilitas softmax Teacher dan penyimpanan ke pseudo_labels.csv.
+- **29. Confidence Score Analysis**: Analisis histogram distribusi confidence score.
+- **30. Pseudo-Label Filtering**: Penyaringan ketat dengan threshold confidence >= 0.95 ke ccepted_pseudo_labels.csv.
+- **31. Class Balance Analysis**: Visualisasi distribusi kelas pseudo-label yang lolos seleksi.
+- **32. Pseudo-Label Consistency Audit**: Pemeriksaan konsistensi ID dan jaminan tidak ada kebocoran test.
+- **33. Accepted Pseudo-Label Manifest Summary**: Ringkasan jumlah pseudo-label yang diterima.
 
-### 5.2 Model Student & Semi-Supervised Loss
-Model Student diinisialisasi dari EfficientNet-B2 pretrained ImageNet dan dilatih menggunakan dataset gabungan (`CombinedStudentDataset`):
-- Data Supervised: 40 sampel manual (bobot sampel = 1.0).
-- Data Pseudo-Labeled: Sampel dengan keyakinan $\ge 0.95$ (bobot loss $\lambda_{pseudo} = 0.5$).
-- **Fungsi Loss Gabungan**:
-  $$\mathcal{L}_{total} = \mathcal{L}_{sup} + \lambda_{pseudo} \cdot \mathcal{L}_{pseudo}$$
+### BAGIAN E - STUDENT TRAINING (Section 34-41)
+- **34. Student Model Initialization**: Inisialisasi model Student EfficientNet-B2 baru.
+- **35. Student Dataset Construction**: CombinedStudentDataset yang memadukan 40 citra manual dan N pseudo-label diterima.
+- **36. Supervised and Pseudo-Labeled Loss**: SemiSupervisedLoss dengan loss tertimbang (bobot manual 1.0, bobot pseudo 0.5).
+- **37. Student Training Configuration**: Hyperparameter Student (AdamW, lr=1e-4, 25 epoch).
+- **38. Student Training Execution**: Pelatihan otomatis Student model dan penyimpanan checkpoint persisten.
+- **39. Student Training History Summary**: Rekapitulasi tabel riwayat pelatihan epoch per epoch.
+- **40. Student Learning Curves**: Plot grafik loss dan akurasi Student.
+- **41. Student Evaluation**: Evaluasi model Student pada himpunan data berlabel manual.
 
----
+### BAGIAN F - EVALUASI KOMPARATIF (Section 42-47)
+- **42. Teacher vs Student Comparison**: Tabel komparasi performa dan peran Teacher vs Student.
+- **43. Validation Metrics**: Rekapitulasi metrik generalisasi dari 5-fold cross-validation.
+- **44. Classification Report**: Laporan presisi, recall, dan F1-score untuk 8 kelas target.
+- **45. Confusion Matrix**: Visualisasi matriks kontingensi mentah dan ternormalisasi.
+- **46. Overfitting / Underfitting Analysis**: Kajian diagnostik transfer learning pada rejim few-shot.
+- **47. Experiment Summary**: Rekapitulasi artefak checkpoint dan manifest.
 
-## 6. Training Monitoring & Checkpoint Management
-
-### 6.1 Monitoring Terintegrasi
-- **Batch Progress**: Progress bar tunggal berbasis `tqdm.auto` yang kompatibel dengan Jupyter, menampilkan epoch, batch, running loss, running accuracy, dan learning rate.
-- **Epoch Summary**: Mencatat train loss, train acc, val loss, val acc, macro precision, recall, macro F1, learning rate, durasi epoch, counter early stopping, dan status penyimpanan checkpoint.
-- **Persistent Logging**: Riwayat disimpan dalam format JSON terstruktur pada `outputs/metrics/`.
-
-### 6.2 Checkpoint Namespace: `fewshot_pseudolabel_b2_v1`
-- `models/checkpoints/fewshot_pseudolabel_b2_v1/cv/fold_{i}/best.pt` (Cross-Validation per fold)
-- `models/checkpoints/fewshot_pseudolabel_b2_v1/teacher/best.pt` (Final Teacher pada 40 sampel)
-- `models/checkpoints/fewshot_pseudolabel_b2_v1/student/best.pt` (Final Student model)
-
----
-
-## 7. Standalone Inference & Kaggle Submission
-
-### 7.1 Fresh-Kernel Standalone Inference (Section 49-53)
-Bagian inferensi dapat dieksekusi secara independen pada kernel baru tanpa memerlukan state variabel dari cell pelatihan sebelumnya:
-1. Menentukan `PROJECT_ROOT` secara dinamis.
-2. Memuat arsitektur EfficientNet-B2 dengan `weights=None` dan memuat `state_dict` langsung dari checkpoint disk.
-3. Menyiapkan transform evaluasi resmi (288x288, ImageNet norm).
-4. Memvalidasi keberadaan 480 citra test dan membaca template `SampleSubmission_DSC.csv`.
-
-### 7.2 Spesifikasi Berkas Submission CSV
-- **Path Target**: `Final Dataset for Submission to Kaggle/submission_fewshot_pseudolabel_b2.csv`
-- **Format**: Dua kolom resmi `image_id,waste_category`
-- **Integritas**:
-  - Tepat 480 baris data (plus 1 header baris).
-  - Format leading zero terjaga (`001`, `002`, dst.).
-  - 0 nilai NaN/null/kosong.
-  - Semua prediksi berada dalam 8 kelas resmi kompetisi.
-  - Urutan baris identik 100% dengan sample submission.
-
----
-
-## 8. Panduan Eksekusi Manual Langkah demi Langkah
-
-Pengguna menjalankan eksperimen secara manual dengan mengaktifkan flag pada notebook `notebooks/08_fewshot_pseudolabeling_efficientnet_b2.ipynb`:
-
-| Langkah | Section Notebook | Flag yang Diaktifkan | Aksi yang Dijalankan |
-| :---: | :--- | :--- | :--- |
-| **1** | 01 ? 07 | `RULES_VERIFIED = True` (opsional) | Inisialisasi environment, audit regulasi, audit integritas |
-| **2** | 08 ? 11 | `RUN_FEWSHOT_PREPARATION = True` | Seleksi 40 sampel labeled, pembuatan unlabeled pool & CV folds |
-| **3** | 12 ? 17 | *(tanpa flag)* | Inisialisasi transform, preview augmentasi, konstruksi DataLoader |
-| **4** | 18 ? 22 | `RUN_CROSS_VALIDATION = True` | Eksekusi 5-Fold Cross-Validation Teacher model |
-| **5** | 23 ? 26 | `RUN_TEACHER_TRAINING = True` | Pelatihan Final Teacher pada seluruh 40 citra berlabel |
-| **6** | 27 ? 33 | `RUN_PSEUDO_LABEL_GENERATION = True`<br>`RUN_PSEUDO_LABEL_SELECTION = True` | Inferensi unlabeled pool & penyaringan pseudo-label (th $\ge 0.95$) |
-| **7** | 34 ? 41 | `RUN_STUDENT_TRAINING = True` | Pelatihan model Student pada data gabungan |
-| **8** | 42 ? 47 | `RUN_TEACHER_STUDENT_EVALUATION = True` | Evaluasi komparatif, matriks konfusi, dan ringkasan |
-| **9** | 48 ? 54 | `RUN_TEST_INFERENCE = True`<br>`RUN_SUBMISSION_GENERATION = True` | Inferensi test 480 citra, pembuatan CSV, dan verifikasi akhir |
+### BAGIAN G - KAGGLE SUBMISSION (Section 48-54)
+- **48. Competition Test Audit**: Verifikasi 480 citra test kompetisi dan kesesuaian dengan SampleSubmission_DSC.csv.
+- **49. Standalone Inference Configuration**: Setup inferensi mandiri tanpa ketergantungan variabel pelatihan.
+- **50. Best Model Selection**: Seleksi otomatis checkpoint terbaik (Student jika ada, Teacher sebagai fallback).
+- **51. Competition Test Inference**: Inferensi otomatis pada 480 citra test resmi.
+- **52. Submission CSV Generation**: Pembuatan berkas Final Dataset for Submission to Kaggle/submission_fewshot_pseudolabel_b2.csv.
+- **53. Submission CSV Verification**: Verifikasi otomatis: tepat 480 baris, format ID leading-zero utuh, 8 kelas valid.
+- **54. Final Submission Summary & Kaggle Upload Guide**: Panduan verifikasi akhir dan pengunggahan manual peserta.
 
 ---
 
-## 9. Hasil Pengujian Mutu (QA & Synthetic Tests)
+## 3. Kamus Konfigurasi Terpusat (CONFIG)
 
-Suite pengujian otomatis pada `tests/test_fewshot_pseudolabel_b2.py` memverifikasi 10 kriteria kualitas dengan status **100% PASS**:
-1. `test_notebook_file_and_cells_structure`: Tepat 108 cell (54 markdown, 54 code).
-2. `test_notebook_code_cells_syntax_compilation`: 54/54 code cell lulus kompilasi sintaks Python tanpa error.
-3. `test_manual_execution_flags_default_false`: Seluruh 10 manual flags bernilai `False` secara default.
-4. `test_labeling_budget_validator`: Menolak dataset $>5$ per kelas atau $>40$ total sampel.
-5. `test_unlabeled_dataset_anti_leakage_contract`: Data unlabeled terbukti tidak mengembalikan true label.
-6. `test_stratified_cv_splits_disjointness`: Folds CV terisolasi sempurna (32 train, 8 val per fold).
-7. `test_teacher_architecture_modification_and_forward_pass`: Arsitektur EfficientNet-B2 8 kelas, 11.272 parameter trainable.
-8. `test_student_semi_supervised_loss`: Formulasi loss semi-supervised terbobot tervalidasi.
-9. `test_standalone_fresh_kernel_setup_logic`: Setup inferensi kernel baru bekerja mandiri.
-10. `test_submission_verification_rules`: Skema submission 480 baris tervalidasi ketat.
+Konfigurasi terletak di Section 02 notebook:
+
+`python
+CONFIG = {
+    "experiment_id": "fewshot_pseudolabel_b2_v1",
+    "random_seed": 42,
+    "image_size": 288,
+    "batch_size": 8,
+    "num_workers": 0,
+    "max_labels_per_class": 5,
+    "max_total_labels": 40,
+    "cv_folds": 5,
+    "teacher_epochs": 15,
+    "teacher_lr": 1e-3,
+    "teacher_patience": 5,
+    "pseudo_label_confidence_threshold": 0.95,
+    "pseudo_label_loss_weight": 0.5,
+    "student_epochs": 25,
+    "student_lr": 1e-4,
+    "student_patience": 7,
+    "mixed_precision": USE_AMP,
+    "device": str(DEVICE)
+}
+`
 
 ---
 
-## 10. Analisis Risiko & Keterbatasan
 
-1. **Varians Rejim Few-Shot**: 40 sampel manual memberikan varians estimasi yang relatif tinggi pada evaluasi validasi.
-2. **Confirmation Bias**: Jika Teacher melakukan misklasifikasi dengan keyakinan tinggi, error tersebut dapat diserap oleh model Student. Mitigasi dilakukan dengan menetapkan ambang batas tinggi ($0.95$) dan bobot loss pseudo yang lebih rendah ($0.5$).
-3. **Keterbatasan Generalisasi Tanpa Label Tambahan**: Model semi-supervised sangat bergantung pada representasi ImageNet pretrained.
+---
 
-*Catatan: Dokumen ini disusun sebagai panduan teknis implementasi TASK 08. Seluruh proses training dan inferensi sesungguhnya dijalankan secara manual oleh pengguna.*
+## 5. Alat Anotasi Manual Mandiri (`tools/manual_fewshot_annotation.py`)
+
+Untuk mempermudah peserta dalam memilih dan memberi label pada **tepat 5 citra per kelas** (total 40 citra) dari 1.920 data train resmi tanpa ketergantungan pada template statis 40 citra pertama, telah disediakan utilitas anotasi visual mandiri:
+
+### Fitur Utama:
+1. **Desktop GUI Modern (Tkinter + Pillow)**: Menampilkan citra kandidat secara visual dengan resolusi terjaga, nomor indeks, dan rincian metadata.
+2. **Karantina Otomatis Anti-Leakage**: 3 citra train yang memiliki kesamaan hash SHA-256 persis dengan citra test (`1046.jpg`, `1135.jpg`, `1821.jpg`) secara otomatis dikarantina dan tidak pernah ditampilkan kepada peserta.
+3. **Penegakan Kuota Real-Time**:
+   - Menghitung jumlah anotasi per kelas secara langsung (misal `cardboard: 3/5`).
+   - Begitu suatu kelas mencapai 5 sampel, tombol kelas tersebut otomatis terkunci (**DISABLED**) untuk mencegah kelebihan kuota.
+   - Total anotasi dibatasi tepat 40 sampel.
+4. **Navigasi Lengkap**:
+   - `[S] Skip`: Melewati citra saat ini tanpa memberi label.
+   - `[U] Undo`: Membatalkan anotasi terakhir dan mengembalikan kuota.
+   - `[R] Reset Skips`: Mengembalikan citra-citra yang sempat dilewati ke dalam rotasi kandidat.
+   - `[E] Ekspor CSV`: Mengekspor berkas jika 40 sampel telah lengkap.
+5. **Penyimpanan Progres Persisten**:
+   - Setiap aksi tersimpan otomatis ke `data/manifests/fewshot_pseudolabel_b2_v1/annotation_progress.json`.
+   - Jika aplikasi ditutup di tengah jalan, progres tidak akan hilang dan dapat dilanjutkan kapan saja.
+6. **Ekspor Otomatis & Terverifikasi**:
+   - Ketika 40 sampel tercapai (5 sampel untuk setiap 8 kelas), sistem secara otomatis menghasilkan dan memverifikasi:
+     `data/manifests/fewshot_pseudolabel_b2_v1/labeled_pool_40.csv`
+   - Format CSV memuat kolom: `image_id,class_name,class_idx,relative_path,sha256` yang 100% kompatibel dengan Section 08 notebook final.
+
+### Cara Menjalankan:
+```powershell
+# 1. Jalankan Antarmuka Visual Desktop (GUI Rekomendasi):
+.env_gelarrasa\Scripts\python.exe tools/manual_fewshot_annotation.py
+
+# 2. Atau Jalankan Mode Terminal Konsol (CLI):
+.env_gelarrasa\Scripts\python.exe tools/manual_fewshot_annotation.py --cli
+
+# 3. Cek Status Progres Anotasi:
+.env_gelarrasa\Scripts\python.exe tools/manual_fewshot_annotation.py --info
+```
+
+## 4. Prasyarat & Panduan Eksekusi
+
+### Prasyarat Pengisian Labeled Pool:
+Sebelum Kernel Restart & Run All berhasil dieksekusi hingga akhir, peserta wajib menyediakan berkas anotasi manual:
+1. Jalankan Section 01-08 sekali (atau amati saat Run All berhenti di Section 08).
+2. Sistem otomatis menghasilkan template di:
+   data/manifests/fewshot_pseudolabel_b2_v1/manual_annotation_template.csv
+3. Isi kolom class_name pada 40 citra train tersebut (tepat 5 citra per kelas untuk 8 kelas resmi).
+4. Simpan file yang telah diisi ke:
+   data/manifests/fewshot_pseudolabel_b2_v1/labeled_pool_40.csv
+5. Lakukan **Kernel Restart & Run All**. Seluruh alur (Teacher, Pseudo-Labeling, Student, Submission CSV) akan berjalan otomatis hingga tuntas.
+
+### Penanganan Pretrained Weights:
+Bobot pretrained ImageNet-1K diunduh oleh torchvision secara otomatis ke cache Torch (~/.cache/torch/hub/checkpoints/) pada saat pertama kali inisialisasi, dan digunakan secara lokal tanpa ketergantungan API pihak ketiga.

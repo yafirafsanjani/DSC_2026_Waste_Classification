@@ -171,8 +171,8 @@ for k, v in STUDENT_CONFIG.items():
 
 SECTIONS.append({
     "id": 38,
-    "title": "38. Manual Student Training",
-    "markdown": """# 38. Manual Student Training Execution
+    "title": "38. Student Training Execution",
+    "markdown": """# 38. Student Training Execution Execution
 
 Pelatihan model Student pada dataset semi-supervised gabungan:
 - Dilindungi oleh flag `RUN_STUDENT_TRAINING`.
@@ -260,13 +260,13 @@ if STUDENT_BEST_CKPT.exists() and STUDENT_METRICS_PATH.exists():
     with open(STUDENT_METRICS_PATH, "r", encoding="utf-8") as f:
         student_results = json.load(f)
     print(f"[LOADED] Checkpoint Student tersedia: {STUDENT_BEST_CKPT}")
-elif RUN_STUDENT_TRAINING and len(labeled_pool_df) > 0 and len(accepted_pseudo_df) > 0:
+elif len(labeled_pool_df) > 0 and len(accepted_pseudo_df) > 0:
     student_results = train_student_model(labeled_pool_df, accepted_pseudo_df, STUDENT_CONFIG)
     with open(STUDENT_METRICS_PATH, "w", encoding="utf-8") as f:
         json.dump(student_results, f, indent=2)
     print(f"[SAVED] Checkpoint Student berhasil disimpan ke {STUDENT_BEST_CKPT}")
 else:
-    print("[STATUS] RUN_STUDENT_TRAINING is False atau data pseudo belum siap.")
+    print("[STATUS] Data labeled pool atau accepted pseudo-labels belum siap.")
     student_results = {}"""
 })
 

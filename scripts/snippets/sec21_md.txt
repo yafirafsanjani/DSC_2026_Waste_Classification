@@ -1,0 +1,6 @@
+# 21. Cross-Validation Execution (5 Folds)
+
+Eksekusi pelatihan 5-Fold Cross-Validation untuk mengukur estimasi generalisasi out-of-fold yang jujur:
+- Jika riwayat CV telah tersimpan pada CV_METRICS_PATH, hasil langsung dimuat untuk inspeksi cepat.
+- Jika belum tersedia, pelatihan 5 fold dijalankan secara berurutan secara otomatis.
+- Setiap fold melatih classifier head pada 32 sampel (4 per kelas) dan divalidasi pada 8 sampel (1 per kelas).

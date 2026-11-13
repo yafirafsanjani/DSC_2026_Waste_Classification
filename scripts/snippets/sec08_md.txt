@@ -1,0 +1,15 @@
+# 08. Manual Labeled Pool Validation & Ingestion
+
+Sesuai regulasi ketat kompetisi DSC Gelar Rasa 2026:
+- Peserta **hanya diizinkan** memberi label manual maksimal **5 citra per kelas** (total maksimal **40 citra**).
+- Dilarang keras menggunakan label ground truth dari dataset lama (Roboflow V1) atau sumber eksternal.
+- Notebook secara otomatis membaca berkas anotasi manual resmi yang telah dibuat peserta pada:
+  `data/manifests/fewshot_pseudolabel_b2_v1/labeled_pool_40.csv`
+
+**Mekanisme Validasi Otomatis (Run-All Gate)**:
+1. **Keberadaan Berkas**: Memverifikasi ketersediaan `labeled_pool_40.csv` dari `PROJECT_ROOT`. Jika belum ada, template dibuat otomatis dan eksekusi dihentikan dengan pesan kesalahan informatif.
+2. **Integritas String ID**: Membaca `image_id` sebagai string untuk mempertahankan leading zero (misal `0005`).
+3. **Validasi Kuota Legal**: Memastikan tepat 40 baris dengan distribusi seimbang tepat 5 sampel untuk setiap 8 kelas resmi (`cardboard`, `electronic`, `foodwaste`, `glass`, `metal`, `paper`, `plastic`, `textile`).
+4. **Verifikasi Fisik & Dekode Citra**: Memastikan seluruh 40 citra fisik ada di `data/competition/train/`, serta dapat dibuka dan dimuat (*verify & load*) menggunakan Pillow.
+5. **Anti-Leakage & Keunikan Konten**: Menghitung ulang hash SHA-256 dari citra asli, memastikan 0 tabrakan dengan 480 citra test kompetisi, serta memastikan tidak ada citra duplikat di dalam labeled pool.
+6. **Rekonstruksi Deterministik**: Membangun ulang kolom `class_idx` (0-7), `relative_path`, dan `sha256` dari sumber terpercaya.

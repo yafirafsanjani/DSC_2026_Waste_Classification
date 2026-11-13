@@ -1,0 +1,5 @@
+# 38. Student Training Execution
+
+Pelatihan model **Student** semi-supervised menggunakan gabungan 40 citra berlabel manual (bobot 1.0) dan pseudo-label berkeyakinan tinggi yang diterima (bobot 0.5):
+- Jika checkpoint Student telah ada, data riwayat dimuat langsung.
+- Jika belum, pelatihan dijalankan secara otomatis dengan fungsi kerugian tertimbang SemiSupervisedLoss.

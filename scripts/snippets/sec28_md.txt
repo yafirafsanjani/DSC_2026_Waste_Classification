@@ -1,0 +1,5 @@
+# 28. Pseudo-Label Generation (Unlabeled Pool)
+
+Menghasilkan prediksi pseudo-label untuk seluruh 1.877 citra unlabeled menggunakan model Final Teacher:
+- Jika berkas pseudo_labels.csv telah tersedia, data dimuat langsung dari disk.
+- Jika belum, inferensi dijalankan secara otomatis dengan output memuat image_id, predicted_class, confidence_score, dan metadata checkpoint Teacher.

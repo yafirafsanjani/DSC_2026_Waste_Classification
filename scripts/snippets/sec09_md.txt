@@ -1,0 +1,9 @@
+# 09. Unlabeled Pool Preparation
+
+Citra train resmi yang tersisa (selain 40 citra berlabel manual dan citra yang bertabrakan dengan test set) dimasukkan ke dalam **Unlabeled Pool**:
+- Total citra train resmi: 1.920 citra.
+- Labeled pool: 40 citra.
+- Citra bertabrakan test (dikarantina): 3 citra.
+- Unlabeled pool bersih: 1.877 citra tanpa label.
+- **Prinsip Anti-Leakage Ketat**: Manifest unlabeled pool HANYA memuat image_id, 
+elative_path, dan sha256. Kolom class_name atau class_idx sama sekali tidak disertakan.

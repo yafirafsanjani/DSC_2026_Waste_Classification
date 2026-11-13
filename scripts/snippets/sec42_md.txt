@@ -1,0 +1,3 @@
+# 42. Teacher vs Student Comparison
+
+Evaluasi komparatif performa model Teacher (Supervised Only) dibandingkan model Student (Semi-Supervised Few-Shot + Pseudo-Labeling).

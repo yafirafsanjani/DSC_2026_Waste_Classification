@@ -1,0 +1,18 @@
+# 03. Official Rules Verification & Automated Compliance Audit
+
+Sebelum memulai pelatihan, integritas kepatuhan regulasi lomba wajib diaudit secara teliti:
+1. **Identifikasi Dokumen Resmi**:
+   Handbook resmi kompetisi telah tersedia di direktori docs/ (HANDBOOK PRELIMINARY ROUND DSC GELAR RASA 2026  (1).pdf).
+2. **Ringkasan Ketentuan Regulasi Resmi (Berdasarkan Halaman 7-8 Handbook)**:
+   - **Batas Hand Labeling Data Train**: Peserta tidak disarankan melakukan hand labeling pada data train. Jika melakukan hand labeling, dibatasi **maksimal 5 gambar per kelas** (total maksimal 40 gambar untuk 8 kelas target dari total 1.920 data train).
+   - **Integritas Data Test**: Peserta **dilarang keras** melakukan hand labeling terhadap data test (480 citra) dan **dilarang menggunakan data test** dalam proses pelatihan model.
+   - **Pretrained Model**: Peserta **diperbolehkan** menggunakan pretrained model selama model tersebut dijalankan oleh peserta dalam lingkungan pengerjaan lokal/kompetisi.
+   - **Larangan Dataset Eksternal**: Peserta **hanya diperbolehkan** menggunakan dataset yang disediakan panitia dan **dilarang menggunakan dataset eksternal** dalam pengerjaan proyek.
+   - **Larangan AutoML, LLM, VLM, Generative AI**: Peserta **dilarang keras** menggunakan AutoML/LLM, VLM, generative AI, atau layanan AI pihak ketiga untuk membuat model, melakukan klasifikasi, atau menghasilkan prediksi terhadap data kompetisi. Library/framework pendukung yang tidak melakukan inference terhadap data kompetisi tetap diperbolehkan.
+   - **Status Pseudo-Labeling**: Teknik *pseudo-labeling* atau *semi-supervised learning* **tidak disebutkan secara eksplisit** dalam handbook. Namun, karena model dilatih secara mandiri pada data kompetisi internal tanpa dataset eksternal dan tetap menghormati kuota 5 hand label per kelas, teknik ini digunakan sebagai strategi teknis internal.
+   - **Kewajiban Satu Notebook Reproducible**: Peserta diwajibkan mengumpulkan **hanya satu file notebook (.ipynb)** yang mencakup seluruh tahapan, bersifat *reproducible* sehingga dapat dijalankan ulang oleh panitia dan menghasilkan skor yang sama dengan file submission CSV.
+3. **Audit Kepatuhan Otomatis (Automated Assertions)**:
+   Pipeline secara otomatis menegakkan batas kepatuhan regulasi handbook:
+   - Memastikan CONFIG['max_labels_per_class'] <= 5.
+   - Memastikan CONFIG['max_total_labels'] <= 40.
+   - Menghentikan eksekusi dengan pesan kesalahan fatal apabila parameter melanggar batas legal kompetisi.

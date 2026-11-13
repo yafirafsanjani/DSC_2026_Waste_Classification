@@ -1,5 +1,4 @@
 # scripts/sec_01_05.py
-import json
 SECTIONS = []
 
 SECTIONS.append({
@@ -66,24 +65,25 @@ print("=" * 75)"""
 SECTIONS.append({
     "id": 2,
     "title": "02. Environment Setup",
-    "markdown": r"""# 02. Environment Setup & Manual Execution Flags
+    "markdown": r"""# 02. Environment Setup & Centralized Experiment Configuration
 
-Bagian ini mengimpor pustaka standar dan saintifik, menetapkan random seed deterministik (42), mendeteksi perangkat keras akselerasi GPU (CUDA) dengan fallback CPU, dan mendeklarasikan seluruh **Manual Execution Flags**.
+Bagian ini mengimpor pustaka standar dan saintifik, menetapkan random seed deterministik (42), mendeteksi perangkat keras akselerasi GPU (CUDA) dengan fallback CPU, dan mengonfigurasi seluruh parameter eksperimen secara terpusat dalam kamus CONFIG.
 
-### Aturan Eksekusi Manual
-Seluruh flag berat bernilai `False` secara default. Pengguna dapat mengaktifkan flag secara bertahap saat ingin menjalankan tahapan tertentu di lingkungan lokal:
-- `RULES_VERIFIED`: Konfirmasi manual atas buku aturan lomba.
-- `RUN_FEWSHOT_PREPARATION`: Menyiapkan partisi labeled pool (40) dan unlabeled pool dari `data/competition/train/`.
-- `RUN_CROSS_VALIDATION`: Menjalankan 5-Fold Cross-Validation teacher.
-- `RUN_TEACHER_TRAINING`: Melatih Final Teacher pada 40 citra berlabel.
-- `RUN_PSEUDO_LABEL_GENERATION`: Menghasilkan raw pseudo-label pada data unlabeled.
-- `RUN_PSEUDO_LABEL_SELECTION`: Menyaring pseudo-label dengan threshold confidence.
-- `RUN_STUDENT_TRAINING`: Melatih model Student pada data gabungan.
-- `RUN_TEACHER_STUDENT_EVALUATION`: Menjalankan evaluasi komparatif Teacher vs Student.
-- `RUN_TEST_INFERENCE`: Memprediksi 480 citra test kompetisi.
-- `RUN_SUBMISSION_GENERATION`: Membuat file submission CSV resmi.""",
+### Konfigurasi Eksperimen Terpusat (Deterministic Run-All)
+Seluruh hyperparameter dan ambang batas eksekusi dikelola secara terpusat dan deterministik:
+- experiment_id: Nama unik eksperimen (ewshot_pseudolabel_b2_v1).
+- 
+andom_seed: Seed deterministik 42 untuk Python, NumPy, dan PyTorch.
+- max_labels_per_class: Batas ketat manual labeling per kelas (5 sampel).
+- max_total_labels: Batas total sampel manual (40 sampel untuk 8 kelas).
+- cv_folds: 5-fold stratified cross-validation.
+- 	eacher_epochs: 15 epoch untuk pelatihan classifier head Teacher.
+- pseudo_label_confidence_threshold: Ambang batas keyakinan Teacher ($\\ge 0.95$).
+- pseudo_label_loss_weight: Bobot loss semi-supervised untuk pseudo-label (0.5).
+- student_epochs: 25 epoch untuk pelatihan model Student.
+- mixed_precision: Automatic Mixed Precision (AMP) aktif jika CUDA tersedia.""",
     "code": r"""# ==============================================================================
-# SECTION 02: ENVIRONMENT SETUP, DEPENDENCIES & MANUAL FLAGS
+# SECTION 02: ENVIRONMENT SETUP & CENTRALIZED EXPERIMENT CONFIGURATION
 # ==============================================================================
 import os
 import sys
@@ -95,7 +95,7 @@ import shutil
 import hashlib
 import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Sequence, Set
+from typing import Any, Callable, Dict, List, Optional, Tuple, Sequence, Set, Union, Iterable, Iterator, Mapping, Type
 from dataclasses import dataclass
 
 import numpy as np
@@ -153,43 +153,47 @@ print(f"  Mixed Precision     : {'Enabled (AMP)' if USE_AMP else 'Disabled (FP32
 print(f"  Transforms Engine   : {'Torchvision v2' if USE_TRANSFORMS_V2 else 'Torchvision v1'}")
 
 # ==============================================================================
-# MANUAL EXECUTION FLAGS (ALL DEFAULT FALSE)
-# Ubah flag ke True secara manual sebelum menjalankan cell tahapan terkait
-# ==============================================================================
-RULES_VERIFIED = False
-RUN_FEWSHOT_PREPARATION = False
-RUN_CROSS_VALIDATION = False
-RUN_TEACHER_TRAINING = False
-RUN_PSEUDO_LABEL_GENERATION = False
-RUN_PSEUDO_LABEL_SELECTION = False
-RUN_STUDENT_TRAINING = False
-RUN_TEACHER_STUDENT_EVALUATION = False
-RUN_TEST_INFERENCE = False
-RUN_SUBMISSION_GENERATION = False
 
-print()
-print("STATUS MANUAL EXECUTION FLAGS:")
-print(f"  RULES_VERIFIED                 = {RULES_VERIFIED}")
-print(f"  RUN_FEWSHOT_PREPARATION        = {RUN_FEWSHOT_PREPARATION}")
-print(f"  RUN_CROSS_VALIDATION           = {RUN_CROSS_VALIDATION}")
-print(f"  RUN_TEACHER_TRAINING           = {RUN_TEACHER_TRAINING}")
-print(f"  RUN_PSEUDO_LABEL_GENERATION    = {RUN_PSEUDO_LABEL_GENERATION}")
-print(f"  RUN_PSEUDO_LABEL_SELECTION     = {RUN_PSEUDO_LABEL_SELECTION}")
-print(f"  RUN_STUDENT_TRAINING           = {RUN_STUDENT_TRAINING}")
-print(f"  RUN_TEACHER_STUDENT_EVALUATION = {RUN_TEACHER_STUDENT_EVALUATION}")
-print(f"  RUN_TEST_INFERENCE             = {RUN_TEST_INFERENCE}")
-print(f"  RUN_SUBMISSION_GENERATION      = {RUN_SUBMISSION_GENERATION}")"""
+# ==============================================================================
+# CENTRALIZED EXPERIMENT CONFIGURATION (DETERMINISTIC RUN-ALL)
+# ==============================================================================
+CONFIG = {
+    "experiment_id": "fewshot_pseudolabel_b2_v1",
+    "random_seed": 42,
+    "image_size": 288,
+    "batch_size": 8,
+    "num_workers": 0,
+    "max_labels_per_class": 5,
+    "max_total_labels": 40,
+    "cv_folds": 5,
+    "teacher_epochs": 15,
+    "teacher_lr": 1e-3,
+    "teacher_patience": 5,
+    "pseudo_label_confidence_threshold": 0.95,
+    "pseudo_label_loss_weight": 0.5,
+    "student_epochs": 25,
+    "student_lr": 1e-4,
+    "student_patience": 7,
+    "mixed_precision": USE_AMP,
+    "device": str(DEVICE)
+}
+
+print("\n" + "=" * 75)
+print("KONFIGURASI EKSPERIMEN TERPUSAT (CONFIG):")
+for k, v in CONFIG.items():
+    print(f"  {k:35s}: {v}")
+print("=" * 75)"""
 })
 
 SECTIONS.append({
     "id": 3,
     "title": "03. Official Rules Verification",
-    "markdown": r"""# 03. Official Rules Verification & Approval Gate
+    "markdown": r"""# 03. Official Rules Verification & Automated Compliance Audit
 
 Sebelum memulai pelatihan, integritas kepatuhan regulasi lomba wajib diaudit secara teliti:
 1. **Identifikasi Dokumen Resmi**:
-   Handbook resmi kompetisi telah tersedia di direktori `docs/` (`HANDBOOK PRELIMINARY ROUND DSC GELAR RASA 2026  (1).pdf`).
-2. **Ringkasan Ketentuan Regulasi Resmi (Berdasarkan Halaman 7?8 Handbook)**:
+   Handbook resmi kompetisi telah tersedia di direktori docs/ (HANDBOOK PRELIMINARY ROUND DSC GELAR RASA 2026  (1).pdf).
+2. **Ringkasan Ketentuan Regulasi Resmi (Berdasarkan Halaman 7-8 Handbook)**:
    - **Batas Hand Labeling Data Train**: Peserta tidak disarankan melakukan hand labeling pada data train. Jika melakukan hand labeling, dibatasi **maksimal 5 gambar per kelas** (total maksimal 40 gambar untuk 8 kelas target dari total 1.920 data train).
    - **Integritas Data Test**: Peserta **dilarang keras** melakukan hand labeling terhadap data test (480 citra) dan **dilarang menggunakan data test** dalam proses pelatihan model.
    - **Pretrained Model**: Peserta **diperbolehkan** menggunakan pretrained model selama model tersebut dijalankan oleh peserta dalam lingkungan pengerjaan lokal/kompetisi.
@@ -197,8 +201,11 @@ Sebelum memulai pelatihan, integritas kepatuhan regulasi lomba wajib diaudit sec
    - **Larangan AutoML, LLM, VLM, Generative AI**: Peserta **dilarang keras** menggunakan AutoML/LLM, VLM, generative AI, atau layanan AI pihak ketiga untuk membuat model, melakukan klasifikasi, atau menghasilkan prediksi terhadap data kompetisi. Library/framework pendukung yang tidak melakukan inference terhadap data kompetisi tetap diperbolehkan.
    - **Status Pseudo-Labeling**: Teknik *pseudo-labeling* atau *semi-supervised learning* **tidak disebutkan secara eksplisit** dalam handbook. Namun, karena model dilatih secara mandiri pada data kompetisi internal tanpa dataset eksternal dan tetap menghormati kuota 5 hand label per kelas, teknik ini digunakan sebagai strategi teknis internal.
    - **Kewajiban Satu Notebook Reproducible**: Peserta diwajibkan mengumpulkan **hanya satu file notebook (.ipynb)** yang mencakup seluruh tahapan, bersifat *reproducible* sehingga dapat dijalankan ulang oleh panitia dan menghasilkan skor yang sama dengan file submission CSV.
-3. **Approval Gate Independen**:
-   Meskipun dokumen handbook resmi telah berhasil dideteksi dan diaudit, flag `RULES_VERIFIED` **tetap bernilai `False` secara default**. Pengguna sendiri yang harus menyetujui dan mengubah flag menjadi `True` secara manual di Section 02 setelah memvalidasi interpretasi aturan tersebut.""",
+3. **Audit Kepatuhan Otomatis (Automated Assertions)**:
+   Pipeline secara otomatis menegakkan batas kepatuhan regulasi handbook:
+   - Memastikan CONFIG['max_labels_per_class'] <= 5.
+   - Memastikan CONFIG['max_total_labels'] <= 40.
+   - Menghentikan eksekusi dengan pesan kesalahan fatal apabila parameter melanggar batas legal kompetisi.""",
     "code": r"""# ==============================================================================
 # SECTION 03: OFFICIAL RULES VERIFICATION & APPROVAL GATE
 # ==============================================================================
@@ -246,8 +253,7 @@ print(f"Dokumen Ditemukan     : {len(detected_handbooks) > 0}")
 
 if detected_handbooks:
     for idx, doc_info in enumerate(detected_handbooks, 1):
-        print(f"
-[DOKUMEN {idx}]")
+        print(f"\\n[DOKUMEN {idx}]")
         print(f"  Nama Berkas   : {doc_info['name']}")
         print(f"  Path Lengkap  : {doc_info['path']}")
         print(f"  Ukuran Berkas : {doc_info['size_bytes'] / (1024*1024):.2f} MB")
@@ -267,8 +273,7 @@ OFFICIAL_RULES_SUMMARY = {
     "submission_deadline": "14 November 2026 pukul 23.59 WIB"
 }
 
-print("
-" + "=" * 75)
+print("\\n" + "=" * 75)
 print("RINGKASAN ATURAN KOMPETISI RESMI (HANDBOOK HALAMAN 7-8):")
 print(f"1. Kuota Hand Labeling Data Train : {OFFICIAL_RULES_SUMMARY['hand_labeling_train_limit']}")
 print(f"2. Larangan Data Test             : {OFFICIAL_RULES_SUMMARY['test_data_restriction']}")
@@ -280,16 +285,12 @@ print(f"7. Kewajiban Single Notebook      : {OFFICIAL_RULES_SUMMARY['single_note
 print(f"8. Batas Pengumpulan Submission   : {OFFICIAL_RULES_SUMMARY['submission_deadline']}")
 print("=" * 75)
 
-# Status Manual Approval Gate (Tidak diubah otomatis menjadi True)
-print(f"
-Status Approval Gate: RULES_VERIFIED = {RULES_VERIFIED}")
-if not RULES_VERIFIED:
-    print("[APPROVAL GATE: PENDING] Dokumen regulasi telah dideteksi dan diringkas,")
-    print("namun status verifikasi tetap 'False' sesuai prinsip manual execution control.")
-    print("Silakan tinjau ringkasan di atas, lalu ubah flag RULES_VERIFIED = True")
-    print("pada Section 02 secara manual untuk menyetujui kepatuhan aturan.")
-else:
-    print("[APPROVAL GATE: VERIFIED] Status kepatuhan telah disetujui pengguna.")"""
+# Automated Compliance Assertions
+assert CONFIG["max_labels_per_class"] <= 5, "Pelanggaran Regulasi: Kuota label per kelas melebihi 5!"
+assert CONFIG["max_total_labels"] <= 40, "Pelanggaran Regulasi: Kuota total label manual melebihi 40!"
+print("\n[KEPATUHAN REGULASI: TERVALIDASI OTOMATIS]")
+print("Parameter konfigurasi telah memenuhi batasan ketat handbook lomba.")
+print("Pipeline siap dieksekusi secara otomatis dari awal hingga akhir.")"""
 })
 
 SECTIONS.append({

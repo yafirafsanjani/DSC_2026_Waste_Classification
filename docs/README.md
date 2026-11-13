@@ -19,6 +19,7 @@ Dokumentasi ini merekam keputusan data pipeline sebelum tahap preprocessing, aug
 13. [TASK 06A - CNN V2 Universal Monitoring](TASK_06A_CNN_V2_Universal_Monitoring.md)
 14. [TASK 07 - EfficientNet-B2 Pretrained](TASK_07_EfficientNet_B2_Pretrained.md)
 15. [TASK 08 - Unified Few-Shot EfficientNet-B2 & Pseudo-Labeling](TASK_08_Unified_FewShot_PseudoLabeling.md)
+16. [TASK 09 - Optimized Few-Shot Classification & SSL V2](TASK_09_Optimized_FewShot_SSL.md)
 
 ## Status Data Saat Ini
 
@@ -32,7 +33,8 @@ Dokumentasi ini merekam keputusan data pipeline sebelum tahap preprocessing, aug
 - TASK 05D membuat setup inference CNN benar-benar mandiri untuk kernel Jupyter baru; root proyek, konfigurasi, mapping kelas, checkpoint, dan path dibaca dari artefak disk tanpa bergantung pada cell training.
 - TASK 06A menerapkan standar monitoring universal pertama pada notebook CNN From Scratch V2: progress batch, ringkasan epoch, history JSON/CSV/JSONL yang aman, learning curves, serta workflow submission standalone. Pada TASK 06A, model pretrained dan YOLO belum diimplementasikan; lihat TASK 07 untuk EfficientNet-B2.
 - TASK 07: `TASK_07_EfficientNet_B2_Pretrained.md` mendokumentasikan EfficientNet-B2 pretrained dua fase pada dataset V1 lama; eksperimen ini merupakan pengujian teknis pra-migrasi, bukan bukti kepatuhan aturan lima label per kelas.
-- TASK 08: `TASK_08_Unified_FewShot_PseudoLabeling.md` mendokumentasikan pipeline semi-supervised terpadu mandiri dalam notebook tunggal `notebooks/08_fewshot_pseudolabeling_efficientnet_b2.ipynb`. Mengimplementasikan batasan anggaran label manual ketat (maksimal 5 label per kelas / 40 total), alokasi unlabeled pool (~1.876 citra), 5-Fold Stratified Cross-Validation, Teacher-Student Pseudo-Labeling (threshold >= 0.95), weighted semi-supervised loss, monitoring real-time, checkpointing, standalone fresh-kernel inference, dan generator submission Kaggle manual.
+- TASK 08: `TASK_08_Unified_FewShot_PseudoLabeling.md` mendokumentasikan baseline semi-supervised awal (skor Kaggle 0.5902).
+- TASK 09: `TASK_09_Optimized_FewShot_SSL.md` mengimplementasikan notebook optimasi `notebooks/09_optimized_fewshot_ssl.ipynb`: memperbaiki BatchNorm running stats leakage saat backbone dibekukan, mengevaluasi 4 classifier few-shot (PyTorch Linear, L2 Logistic Regression, Linear SVC, Cosine Prototype) via 5-Fold Stratified CV OOF, menerapkan two-view augmentation consistency pseudo-labeling, Class-Balanced Top-K filtering, Student training dengan weighted loss, Test-Time Augmentation (TTA), serta ekspor `submission_optimized_fewshot_ssl.csv`. Notebook telah direfaktor secara penuh untuk mendukung eksekusi **Kernel Restart & Run All** yang reproducible bagi juri/kompetisi, mengeliminasi seluruh 10 flag manual dan menggantinya dengan kamus `CONFIG` terpusat, membaca dataset resmi `data/competition/train/` (1.920 citra) dan `test/` (480 citra), memvalidasi kuota ketat 5 label/kelas (40 total) via `data/manifests/fewshot_pseudolabel_b2_v1/labeled_pool_40.csv`, mengarantina 3 citra train bertabrakan test, mengalokasikan 1.877 citra unlabeled pool bersih, 5-Fold Stratified Cross-Validation, Teacher-Student Pseudo-Labeling (threshold >= 0.95), weighted loss semi-supervised, evaluasi komparatif, inferensi test otomatis, serta pembuatan berkas `submission_fewshot_pseudolabel_b2.csv`.
 
 ## Reproduksi
 
@@ -42,4 +44,5 @@ Gunakan virtual environment `venv_gelarrasa` dan jalankan dari root proyek. Tida
 .\venv_gelarrasa\Scripts\python.exe -m pytest tests\test_preprocessing.py -q
 .\venv_gelarrasa\Scripts\python.exe -m pytest tests\test_dataset.py -q
 .\venv_gelarrasa\Scripts\python.exe -m pytest tests\test_fewshot_pseudolabel_b2.py -v
+.\venv_gelarrasa\Scripts\python.exe -m pytest tests\test_optimized_fewshot_ssl.py -v
 ```

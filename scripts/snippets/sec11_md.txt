@@ -1,0 +1,7 @@
+# 11. Few-Shot Validation Protocol
+
+Protokol validasi 5-Fold Stratified Cross-Validation pada 40 citra berlabel manual:
+- Setiap fold membagi data menjadi:
+  - **Training**: 32 citra (4 per kelas).
+  - **Validation**: 8 citra (tepat 1 per kelas).
+- Protokol ini menjamin evaluasi out-of-fold yang adil tanpa risiko kebocoran data (data leakage) sebelum Final Teacher dilatih dengan seluruh 40 citra.

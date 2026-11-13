@@ -1,0 +1,353 @@
+{
+  "annotations": {
+    "0001": {
+      "image_id": "0001",
+      "class_name": "cardboard",
+      "class_idx": 0,
+      "relative_path": "data/competition/train/0001.jpg",
+      "sha256": "6262a4dd157711f81b6e1a4a7ad916f9fabf5b3fd873ed790a765eef4f37c54f"
+    },
+    "0002": {
+      "image_id": "0002",
+      "class_name": "textile",
+      "class_idx": 7,
+      "relative_path": "data/competition/train/0002.jpg",
+      "sha256": "415f1cb257ef0c87d66c63bfe652f97f9a6d49322d8d2d9a0302b50adadb8bad"
+    },
+    "0003": {
+      "image_id": "0003",
+      "class_name": "textile",
+      "class_idx": 7,
+      "relative_path": "data/competition/train/0003.jpg",
+      "sha256": "7235133ac61b1aeebeac97d3ddecca290a6fd5e9851c7b0f553a9b9189fbb191"
+    },
+    "0004": {
+      "image_id": "0004",
+      "class_name": "textile",
+      "class_idx": 7,
+      "relative_path": "data/competition/train/0004.jpg",
+      "sha256": "40a7834e1d47fb286959af5ca470aa99798f287c2937384463f343a6553579cc"
+    },
+    "0005": {
+      "image_id": "0005",
+      "class_name": "metal",
+      "class_idx": 4,
+      "relative_path": "data/competition/train/0005.jpg",
+      "sha256": "4a0b49df3aee7d0bb6f8a68c721420413cb1b028626b7b84b9cac1c5121a940d"
+    },
+    "0006": {
+      "image_id": "0006",
+      "class_name": "plastic",
+      "class_idx": 6,
+      "relative_path": "data/competition/train/0006.jpg",
+      "sha256": "fb25d1ad78faebf559776144910a0233e7b1ffc5f250c0b6d86b1a6f15c53d36"
+    },
+    "0007": {
+      "image_id": "0007",
+      "class_name": "plastic",
+      "class_idx": 6,
+      "relative_path": "data/competition/train/0007.jpg",
+      "sha256": "5690185ac53a22361c9782e475bae26f42e8ba9710c479eb8df48d3d22ea760a"
+    },
+    "0008": {
+      "image_id": "0008",
+      "class_name": "cardboard",
+      "class_idx": 0,
+      "relative_path": "data/competition/train/0008.jpg",
+      "sha256": "86ae72e092ba6c809ab0c963fe8135ed375e18e852523fbf28edf83c109abf74"
+    },
+    "0009": {
+      "image_id": "0009",
+      "class_name": "electronic",
+      "class_idx": 1,
+      "relative_path": "data/competition/train/0009.jpg",
+      "sha256": "c81cbf208dfb01fc9b3569b2180c85b38d69a7b495c17475a7b2e62b36f2ba7d"
+    },
+    "0010": {
+      "image_id": "0010",
+      "class_name": "cardboard",
+      "class_idx": 0,
+      "relative_path": "data/competition/train/0010.jpeg",
+      "sha256": "2e1ddb0fa824133e7969a0b72242171f3937cd186911e28f7842eb92e9f235f7"
+    },
+    "0011": {
+      "image_id": "0011",
+      "class_name": "paper",
+      "class_idx": 5,
+      "relative_path": "data/competition/train/0011.jpg",
+      "sha256": "c19c817bbdea54a5f00eb7fcf11f1a6a4e31cd5b20aff169c5224ffa9dde9600"
+    },
+    "0012": {
+      "image_id": "0012",
+      "class_name": "foodwaste",
+      "class_idx": 2,
+      "relative_path": "data/competition/train/0012.jpg",
+      "sha256": "10837a47fbe2dd84f288345edf099ae0eb9daa79f732ded4f4e0a44de2aa56aa"
+    },
+    "0013": {
+      "image_id": "0013",
+      "class_name": "plastic",
+      "class_idx": 6,
+      "relative_path": "data/competition/train/0013.jpg",
+      "sha256": "fb78d7e15c7b09276cd1ed76f3de88b938f9c082c17e436b61349031b5e64605"
+    },
+    "0014": {
+      "image_id": "0014",
+      "class_name": "cardboard",
+      "class_idx": 0,
+      "relative_path": "data/competition/train/0014.jpg",
+      "sha256": "d73fd37dc7ec499c088e9f572378fc212c95d2c2ff01b9c77f223e1fca856558"
+    },
+    "0015": {
+      "image_id": "0015",
+      "class_name": "foodwaste",
+      "class_idx": 2,
+      "relative_path": "data/competition/train/0015.jpg",
+      "sha256": "8c0efceb9da13628fc297e65189f5f69b221f04911a64e4b31a5258dc068664c"
+    },
+    "0016": {
+      "image_id": "0016",
+      "class_name": "foodwaste",
+      "class_idx": 2,
+      "relative_path": "data/competition/train/0016.jpg",
+      "sha256": "21345e2322c2edd3ff31f7b7836d9c32cb02cfa543363ab4423ea617142fb13f"
+    },
+    "0017": {
+      "image_id": "0017",
+      "class_name": "glass",
+      "class_idx": 3,
+      "relative_path": "data/competition/train/0017.jpg",
+      "sha256": "6d43161574854cefa9e3b7d2d4ca61dcbb5716b282a34c45fab5a59ff57a57b7"
+    },
+    "0018": {
+      "image_id": "0018",
+      "class_name": "paper",
+      "class_idx": 5,
+      "relative_path": "data/competition/train/0018.jpg",
+      "sha256": "a050047558ad52ed6e2b82c4ec5dc455a99bdb3771c449397098a60b632754cf"
+    },
+    "0019": {
+      "image_id": "0019",
+      "class_name": "metal",
+      "class_idx": 4,
+      "relative_path": "data/competition/train/0019.jpg",
+      "sha256": "1aab5ce6f2c15009a50f0a5cf189c7fb311a5e3ac28a79c947f4e505ba8c646a"
+    },
+    "0020": {
+      "image_id": "0020",
+      "class_name": "textile",
+      "class_idx": 7,
+      "relative_path": "data/competition/train/0020.jpg",
+      "sha256": "539626da1872ed11a36c2f266415f102cbf9cfcc3c59db9b369e6aa01c294561"
+    },
+    "0021": {
+      "image_id": "0021",
+      "class_name": "metal",
+      "class_idx": 4,
+      "relative_path": "data/competition/train/0021.jpg",
+      "sha256": "7941ec6993e49471182ee03a480c2dcda5e44a900e47be59ade83341b58b2881"
+    },
+    "0022": {
+      "image_id": "0022",
+      "class_name": "plastic",
+      "class_idx": 6,
+      "relative_path": "data/competition/train/0022.jpg",
+      "sha256": "cec9c8d4d89ad1a31d9af4ed3d18c5b4ebd704fa13152781d377b76692d817a1"
+    },
+    "0023": {
+      "image_id": "0023",
+      "class_name": "foodwaste",
+      "class_idx": 2,
+      "relative_path": "data/competition/train/0023.jpg",
+      "sha256": "d3942239330d561b3a6b85d209940196db5bd4c2292fb717c6e9ecf68e2198d6"
+    },
+    "0024": {
+      "image_id": "0024",
+      "class_name": "paper",
+      "class_idx": 5,
+      "relative_path": "data/competition/train/0024.jpg",
+      "sha256": "e5bf62e4aa49db0e6168be70f6692441707ada18b4184ff1b40144c90cacc0dd"
+    },
+    "0025": {
+      "image_id": "0025",
+      "class_name": "metal",
+      "class_idx": 4,
+      "relative_path": "data/competition/train/0025.jpg",
+      "sha256": "cb341a6645db1913bd3bd65350d56fba25ab845ec227ff4bc06916c9f030a160"
+    },
+    "0026": {
+      "image_id": "0026",
+      "class_name": "plastic",
+      "class_idx": 6,
+      "relative_path": "data/competition/train/0026.jpg",
+      "sha256": "1a00c1158c0cafc1166e8e43ec01ba960e148c4a5be68cadf8b9f815e0d33d19"
+    },
+    "0027": {
+      "image_id": "0027",
+      "class_name": "paper",
+      "class_idx": 5,
+      "relative_path": "data/competition/train/0027.jpg",
+      "sha256": "6b8f01ce14955817ac43a7d9062966497ff0760d74579eb70e495d4d0410a87e"
+    },
+    "0028": {
+      "image_id": "0028",
+      "class_name": "textile",
+      "class_idx": 7,
+      "relative_path": "data/competition/train/0028.jpg",
+      "sha256": "70281e08346a552997437144158c4b8f0237173479ff13d49cfe8d649dd6cde8"
+    },
+    "0029": {
+      "image_id": "0029",
+      "class_name": "electronic",
+      "class_idx": 1,
+      "relative_path": "data/competition/train/0029.jpg",
+      "sha256": "746847a0578a984b2db3b682c4672f48c92e3491b5d7b7ef6b4b8d930621ab00"
+    },
+    "0030": {
+      "image_id": "0030",
+      "class_name": "electronic",
+      "class_idx": 1,
+      "relative_path": "data/competition/train/0030.jpg",
+      "sha256": "f21f2f169307478aa4b646a574086a409851a8fdb9f76625bfb261baa96698ae"
+    },
+    "0031": {
+      "image_id": "0031",
+      "class_name": "electronic",
+      "class_idx": 1,
+      "relative_path": "data/competition/train/0031.jpg",
+      "sha256": "d0abb7193d3d627c5114bc7c83f4f22e0536d618c47d45dfb6d54508efb94fa4"
+    },
+    "0032": {
+      "image_id": "0032",
+      "class_name": "foodwaste",
+      "class_idx": 2,
+      "relative_path": "data/competition/train/0032.jpg",
+      "sha256": "28f8c4792d28b838b516f1a73de4b3430a00b4240af068a797e512297cb197d1"
+    },
+    "0033": {
+      "image_id": "0033",
+      "class_name": "metal",
+      "class_idx": 4,
+      "relative_path": "data/competition/train/0033.jpg",
+      "sha256": "dac8d1fdeeaa466bcce73995a01942c8b735c55bc90400b07eb35d27eb0d29ca"
+    },
+    "0036": {
+      "image_id": "0036",
+      "class_name": "glass",
+      "class_idx": 3,
+      "relative_path": "data/competition/train/0036.jpg",
+      "sha256": "f9edac72455733b631ec19dc374ac54e7929e572cfb51c9a2810ee5fab1a61d5"
+    },
+    "0037": {
+      "image_id": "0037",
+      "class_name": "cardboard",
+      "class_idx": 0,
+      "relative_path": "data/competition/train/0037.jpg",
+      "sha256": "f9cbc4a09b330b2adb03a578aab2c9750fba6efc33b8c80a91309b88c70904a0"
+    },
+    "0038": {
+      "image_id": "0038",
+      "class_name": "paper",
+      "class_idx": 5,
+      "relative_path": "data/competition/train/0038.jpg",
+      "sha256": "a8f4a8cb46c3a9f57e06d2d10c8ca8346e3ed60ae5be049251958de0b3a0c3b7"
+    },
+    "0039": {
+      "image_id": "0039",
+      "class_name": "glass",
+      "class_idx": 3,
+      "relative_path": "data/competition/train/0039.jpg",
+      "sha256": "f587528ff7e4801dbb8c839218bd2caca4aff7c434a2373abedfa0cb81908c9e"
+    },
+    "0049": {
+      "image_id": "0049",
+      "class_name": "glass",
+      "class_idx": 3,
+      "relative_path": "data/competition/train/0049.jpg",
+      "sha256": "07ebb2c053ee904ab5f673996dd161634c933c4bd8c97c78bcbe5f9e988f984c"
+    },
+    "0050": {
+      "image_id": "0050",
+      "class_name": "glass",
+      "class_idx": 3,
+      "relative_path": "data/competition/train/0050.jpg",
+      "sha256": "6a6b8e86add57905a13800f14c732f48846fa4fa23b9ced34a71d6a79cc0dacf"
+    },
+    "0052": {
+      "image_id": "0052",
+      "class_name": "electronic",
+      "class_idx": 1,
+      "relative_path": "data/competition/train/0052.jpg",
+      "sha256": "6bbf8b720c5da076172d11d48fbcbffc2f4309ab598473df4ea6dfdf2470b406"
+    }
+  },
+  "annotation_history": [
+    "0001",
+    "0002",
+    "0003",
+    "0004",
+    "0005",
+    "0006",
+    "0007",
+    "0008",
+    "0009",
+    "0010",
+    "0011",
+    "0012",
+    "0013",
+    "0014",
+    "0015",
+    "0016",
+    "0017",
+    "0018",
+    "0019",
+    "0020",
+    "0021",
+    "0022",
+    "0023",
+    "0024",
+    "0025",
+    "0026",
+    "0027",
+    "0028",
+    "0029",
+    "0030",
+    "0031",
+    "0032",
+    "0033",
+    "0036",
+    "0037",
+    "0038",
+    "0039",
+    "0049",
+    "0050",
+    "0052"
+  ],
+  "skipped_ids": [
+    "0034",
+    "0042",
+    "0051",
+    "0047",
+    "0040",
+    "0048",
+    "0035",
+    "0043",
+    "0045",
+    "0041",
+    "0046",
+    "0044"
+  ],
+  "current_idx": 52,
+  "counts": {
+    "cardboard": 5,
+    "electronic": 5,
+    "foodwaste": 5,
+    "glass": 5,
+    "metal": 5,
+    "paper": 5,
+    "plastic": 5,
+    "textile": 5
+  },
+  "total_annotated": 40,
+  "is_complete": true
+}

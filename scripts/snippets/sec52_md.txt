@@ -1,0 +1,6 @@
+# 52. Submission CSV Generation
+
+Menyimpan hasil prediksi 480 citra test ke berkas CSV submission resmi:
+- Lokasi: Final Dataset for Submission to Kaggle/submission_fewshot_pseudolabel_b2.csv
+- Format: image_id,waste_category dengan urutan persis sesuai SampleSubmission_DSC.csv.
+- Leading zero pada image_id dipertahankan secara utuh.

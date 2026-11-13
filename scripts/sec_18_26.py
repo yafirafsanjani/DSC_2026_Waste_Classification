@@ -110,8 +110,8 @@ for k, v in CV_CONFIG.items():
 
 SECTIONS.append({
     "id": 21,
-    "title": "21. Manual Cross-Validation Execution",
-    "markdown": r"""# 21. Manual Cross-Validation Execution (5 Folds)
+    "title": "21. Cross-Validation Execution",
+    "markdown": r"""# 21. Cross-Validation Execution (5 Folds)
 
 Eksekusi pelatihan 5-Fold Cross-Validation untuk mengukur estimasi generalisasi out-of-fold yang jujur:
 - Dilindungi oleh flag `RUN_CROSS_VALIDATION`.
@@ -233,8 +233,8 @@ if CV_METRICS_PATH.exists():
     with open(CV_METRICS_PATH, "r", encoding="utf-8") as f:
         cv_results = json.load(f)
     print(f"[LOADED] Riwayat 5-Fold CV dimuat dari {CV_METRICS_PATH}.")
-elif RUN_CROSS_VALIDATION and len(cv_folds_df) > 0:
-    print("[RUNNING] Menjalankan 5-Fold Cross-Validation secara berurutan...")
+elif len(cv_folds_df) > 0:
+    print("[RUN-ALL] Menjalankan 5-Fold Cross-Validation Teacher secara berurutan...")
     cv_results = []
     for f in range(CV_CONFIG["num_folds"]):
         res = run_cv_fold_training(f, cv_folds_df, CV_CONFIG)
@@ -243,7 +243,7 @@ elif RUN_CROSS_VALIDATION and len(cv_folds_df) > 0:
         json.dump(cv_results, f, indent=2)
     print(f"[COMPLETED] 5-Fold CV selesai. Riwayat disimpan ke {CV_METRICS_PATH}")
 else:
-    print("[STATUS] RUN_CROSS_VALIDATION is False. Eksekusi CV dilewati.")
+    print("[STATUS] Data CV Folds belum tersedia.")
     cv_results = []"""
 })
 
@@ -321,8 +321,8 @@ for k, v in FINAL_TEACHER_CONFIG.items():
 
 SECTIONS.append({
     "id": 24,
-    "title": "24. Manual Final Teacher Training",
-    "markdown": r"""# 24. Manual Final Teacher Training (All 40 Samples)
+    "title": "24. Final Teacher Training",
+    "markdown": r"""# 24. Final Teacher Training (All 40 Samples)
 
 Pelatihan Final Teacher pada 40 citra berlabel:
 - Dilindungi oleh flag `RUN_TEACHER_TRAINING`.
@@ -387,13 +387,13 @@ if TEACHER_BEST_CKPT.exists() and TEACHER_METRICS_PATH.exists():
     with open(TEACHER_METRICS_PATH, "r", encoding="utf-8") as f:
         teacher_results = json.load(f)
     print(f"[LOADED] Checkpoint Final Teacher tersedia: {TEACHER_BEST_CKPT}")
-elif RUN_TEACHER_TRAINING and len(labeled_pool_df) > 0:
+elif len(labeled_pool_df) > 0:
     teacher_results = train_final_teacher(labeled_pool_df, FINAL_TEACHER_CONFIG)
     with open(TEACHER_METRICS_PATH, "w", encoding="utf-8") as f:
         json.dump(teacher_results, f, indent=2)
     print(f"[SAVED] Final Teacher Checkpoint disimpan ke {TEACHER_BEST_CKPT}")
 else:
-    print("[STATUS] RUN_TEACHER_TRAINING is False. Training Final Teacher dilewati.")
+    print("[STATUS] Labeled pool belum tersedia.")
     teacher_results = {}"""
 })
 

@@ -4,13 +4,10 @@ SECTIONS = []
 SECTIONS.append({
     "id": 42,
     "title": "42. Teacher vs Student Comparison",
-    "markdown": """# 42. Teacher vs Student Comparison
+    "markdown": r"""# 42. Teacher vs Student Comparison
 
-Analisis komparatif menyeluruh antara model Teacher dan model Student:
-- **Teacher**: Dilatih hanya pada 40 citra berlabel manual.
-- **Student**: Dilatih pada 40 citra berlabel manual + citra pseudo-label yang lolos filter (threshold >= 0.95).
-- **Integritas Metrik**: Perbandingan disajikan secara jujur. Tidak boleh membandingkan metrik out-of-fold Teacher dengan metrik in-sample Student sebagai klaim peningkatan semu.""",
-    "code": """# ==============================================================================
+Evaluasi komparatif performa model Teacher (Supervised Only) dibandingkan model Student (Semi-Supervised Few-Shot + Pseudo-Labeling).""",
+    "code": r"""# ==============================================================================
 # SECTION 42: TEACHER VS STUDENT COMPARISON
 # ==============================================================================
 def compare_teacher_and_student():
@@ -26,17 +23,18 @@ def compare_teacher_and_student():
             "Pseudo Samples": 0,
             "Final Loss": f"{t_payload.get('final_loss', float('nan')):.4f}",
             "Training Acc": f"{t_payload.get('final_acc', float('nan'))*100:.2f}%",
-            "Role": "Baseline & Pseudo-Label Generator"
+            "Role": "Initial Pseudo-Label Generator"
         })
         
     # Data Student
     if STUDENT_BEST_CKPT.exists():
         s_payload = torch.load(STUDENT_BEST_CKPT, map_location="cpu")
+        num_pseudo = len(accepted_pseudo_df) if "accepted_pseudo_df" in globals() else 0
         records.append({
-            "Model": "Student Semi-Sup",
+            "Model": "Student",
             "Backbone": "EfficientNet-B2",
             "Supervised Samples": 40,
-            "Pseudo Samples": s_payload.get("num_pseudo", 0),
+            "Pseudo Samples": num_pseudo,
             "Final Loss": f"{s_payload.get('final_loss', float('nan')):.4f}",
             "Training Acc": f"{s_payload.get('final_acc', float('nan'))*100:.2f}%",
             "Role": "Final Classifier with Distillation"
@@ -49,23 +47,20 @@ def compare_teacher_and_student():
     else:
         print("[INFO] Model Teacher atau Student belum selesai dilatih.")
 
-if RUN_TEACHER_STUDENT_EVALUATION or (TEACHER_BEST_CKPT.exists() and STUDENT_BEST_CKPT.exists()):
-    compare_teacher_and_student()
-else:
-    print("[STATUS] RUN_TEACHER_STUDENT_EVALUATION is False. Evaluasi komparatif dilewati.")"""
+compare_teacher_and_student()"""
 })
 
 SECTIONS.append({
     "id": 43,
     "title": "43. Validation Metrics",
-    "markdown": """# 43. Validation Metrics
+    "markdown": r"""# 43. Validation Metrics
 
 Rekapitulasi metrik validasi resmi dari Out-Of-Fold Cross-Validation:
 - Akurasi
 - Macro Precision
 - Macro Recall
 - Macro F1-Score across all 8 classes.""",
-    "code": """# ==============================================================================
+    "code": r"""# ==============================================================================
 # SECTION 43: VALIDATION METRICS
 # ==============================================================================
 if CV_METRICS_PATH.exists():
@@ -82,10 +77,10 @@ else:
 SECTIONS.append({
     "id": 44,
     "title": "44. Classification Report",
-    "markdown": """# 44. Classification Report
+    "markdown": r"""# 44. Classification Report
 
 Laporan klasifikasi per kelas untuk 8 kelas sampah target (Precision, Recall, F1-Score, dan Support) menggunakan `sklearn.metrics.classification_report`.""",
-    "code": """# ==============================================================================
+    "code": r"""# ==============================================================================
 # SECTION 44: CLASSIFICATION REPORT
 # ==============================================================================
 def display_classification_report(y_true: List[int], y_pred: List[int]):
@@ -112,10 +107,10 @@ else:
 SECTIONS.append({
     "id": 45,
     "title": "45. Confusion Matrix",
-    "markdown": """# 45. Confusion Matrix (Raw & Normalized)
+    "markdown": r"""# 45. Confusion Matrix (Raw & Normalized)
 
 Visualisasi Confusion Matrix untuk menganalisis kesalahan prediksi antarkelas (misalnya antara `cardboard` vs `paper` atau `glass` vs `plastic`).""",
-    "code": """# ==============================================================================
+    "code": r"""# ==============================================================================
 # SECTION 45: CONFUSION MATRIX
 # ==============================================================================
 def plot_confusion_matrices(y_true: List[int], y_pred: List[int]):
@@ -163,13 +158,13 @@ else:
 SECTIONS.append({
     "id": 46,
     "title": "46. Overfitting / Underfitting Analysis",
-    "markdown": """# 46. Overfitting / Underfitting Analysis
+    "markdown": r"""# 46. Overfitting / Underfitting Analysis
 
 Analisis stabilitas model pada skenario data sedikit (Few-Shot):
 1. **Risiko Overfitting**: Dengan hanya 5 citra per kelas, model rentan menghafal latar belakang (background memorization).
 2. **Mitigasi**: Pembekuan backbone (frozen backbone), Dropout 0.3, Weight Decay 1e-4, dan augmentasi fotorealistik.
 3. **Risiko Pseudo-Labeling**: Confirmation bias terjadi jika threshold terlalu rendah (< 0.80). Threshold 0.95 meminimalkan transfer label salah ke model Student.""",
-    "code": """# ==============================================================================
+    "code": r"""# ==============================================================================
 # SECTION 46: OVERFITTING / UNDERFITTING ANALYSIS
 # ==============================================================================
 print("ANALISIS RESIKO DAN REGULARISASI:")
@@ -182,13 +177,13 @@ print("4. Loss Weighting  : Bobot pseudo 0.5 memberikan prioritas lebih tinggi p
 SECTIONS.append({
     "id": 47,
     "title": "47. Experiment Summary",
-    "markdown": """# 47. Experiment Summary
+    "markdown": r"""# 47. Experiment Summary
 
 Ringkasan eksekutif eksperimen TASK 08:
 - Status kuota label (40/40 terpakai).
 - Status Teacher dan Student model.
 - Checkpoint yang siap digunakan untuk tahapan inferensi submission.""",
-    "code": """# ==============================================================================
+    "code": r"""# ==============================================================================
 # SECTION 47: EXPERIMENT SUMMARY
 # ==============================================================================
 def print_experiment_summary():

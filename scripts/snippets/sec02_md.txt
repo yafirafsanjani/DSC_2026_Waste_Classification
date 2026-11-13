@@ -1,0 +1,17 @@
+# 02. Environment Setup & Centralized Experiment Configuration
+
+Bagian ini mengimpor pustaka standar dan saintifik, menetapkan random seed deterministik (42), mendeteksi perangkat keras akselerasi GPU (CUDA) dengan fallback CPU, dan mengonfigurasi seluruh parameter eksperimen secara terpusat dalam kamus CONFIG.
+
+### Konfigurasi Eksperimen Terpusat (Deterministic Run-All)
+Seluruh hyperparameter dan ambang batas eksekusi dikelola secara terpusat dan deterministik:
+- experiment_id: Nama unik eksperimen (ewshot_pseudolabel_b2_v1).
+- 
+andom_seed: Seed deterministik 42 untuk Python, NumPy, dan PyTorch.
+- max_labels_per_class: Batas ketat manual labeling per kelas (5 sampel).
+- max_total_labels: Batas total sampel manual (40 sampel untuk 8 kelas).
+- cv_folds: 5-fold stratified cross-validation.
+- 	eacher_epochs: 15 epoch untuk pelatihan classifier head Teacher.
+- pseudo_label_confidence_threshold: Ambang batas keyakinan Teacher ($\\ge 0.95$).
+- pseudo_label_loss_weight: Bobot loss semi-supervised untuk pseudo-label (0.5).
+- student_epochs: 25 epoch untuk pelatihan model Student.
+- mixed_precision: Automatic Mixed Precision (AMP) aktif jika CUDA tersedia.

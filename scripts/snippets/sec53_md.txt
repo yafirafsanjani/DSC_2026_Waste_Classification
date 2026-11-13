@@ -1,0 +1,7 @@
+# 53. Submission CSV Verification
+
+Verifikasi komprehensif terhadap integritas berkas submission CSV sebelum diunggah ke Kaggle:
+- Tepat 480 baris.
+- Dua kolom resmi: image_id,waste_category.
+- Urutan dan format ID identik dengan template sample submission.
+- Seluruh kategori valid dalam 8 kelas resmi.

@@ -1,0 +1,5 @@
+# 30. Pseudo-Label Filtering
+
+Menyaring prediksi pseudo-label dengan confidence threshold ketat (default $\\ge 0.95$):
+- Prediksi yang lolos disimpan ke data/manifests/fewshot_pseudolabel_b2_v1/accepted_pseudo_labels.csv.
+- Setiap sampel yang lolos diberikan bobot loss pseudo (default 0.5) untuk pelatihan model Student semi-supervised.

@@ -1,0 +1,6 @@
+# 51. Competition Test Inference (480 Test Samples)
+
+Menjalankan inferensi pada 480 citra test kompetisi asli tanpa label (data/competition/test/):
+- Memuat model terbaik yang terpilih di Section 50 (Student jika tersedia, atau Teacher).
+- Menggunakan 	orch.inference_mode() dan preprocessing resmi (288x288, ImageNet normalisasi).
+- Menghasilkan prediksi kelas resmi untuk seluruh 480 citra.
